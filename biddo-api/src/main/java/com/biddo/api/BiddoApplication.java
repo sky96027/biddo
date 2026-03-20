@@ -1,0 +1,12 @@
+package com.biddo.api;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication(scanBasePackages = "com.biddo")
+public class BiddoApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(BiddoApplication.class, args);
+    }
+}
