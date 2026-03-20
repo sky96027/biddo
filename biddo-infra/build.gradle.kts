@@ -2,5 +2,6 @@ dependencies {
     implementation(project(":biddo-domain"))
 
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-data-redis")
     runtimeOnly("org.postgresql:postgresql")
 }
