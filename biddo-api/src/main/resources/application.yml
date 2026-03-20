@@ -10,7 +10,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     properties:
       hibernate:
         format_sql: true
@@ -23,7 +23,7 @@ spring:
       port: ${REDIS_PORT:6379}
 
 server:
-  port: 8080
+  port: 9090
 
 jwt:
   secret: ${JWT_SECRET:dGhpcyBpcyBhIHZlcnkgbG9uZyBzZWNyZXQga2V5IGZvciBiaWRkbyBqd3QgdG9rZW4gZ2VuZXJhdGlvbg==}
