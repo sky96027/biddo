@@ -10,6 +10,7 @@ import com.biddo.domain.category.entity.Category;
 import com.biddo.domain.category.repository.CategoryRepository;
 import com.biddo.domain.common.exception.BusinessException;
 import com.biddo.domain.member.entity.Member;
+import com.biddo.domain.member.exception.MemberErrorCode;
 import com.biddo.domain.member.repository.MemberRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -165,6 +166,33 @@ class AuctionServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(AuctionErrorCode.NOT_AUCTION_SELLER));
+    }
+
+    @Test
+    @DisplayName("경매 생성 실패 - 회원 없음")
+    void create_memberNotFound() {
+        given(memberRepository.findById(999L)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> auctionService.create(999L, 9L, "iPhone", "설명",
+                ItemCondition.NEW, 500000L, null, startTime, endTime, null))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(MemberErrorCode.MEMBER_NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("경매 생성 실패 - 종료시간이 시작시간 이전")
+    void create_invalidTime() {
+        given(memberRepository.findById(1L)).willReturn(Optional.of(seller));
+        given(categoryRepository.findById(9L)).willReturn(Optional.of(category));
+
+        LocalDateTime invalidEndTime = startTime.minusHours(1);
+
+        assertThatThrownBy(() -> auctionService.create(1L, 9L, "iPhone", "설명",
+                ItemCondition.NEW, 500000L, null, startTime, invalidEndTime, null))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(AuctionErrorCode.INVALID_AUCTION_TIME));
     }
 
     @Test
