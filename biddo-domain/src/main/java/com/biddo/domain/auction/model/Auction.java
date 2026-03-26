@@ -127,4 +127,24 @@ public class Auction extends BaseTimeEntity {
         this.images.clear();
         this.images.addAll(newImages);
     }
+
+    public void applyBid(Long bidAmount, Member bidder) {
+        this.currentPrice = bidAmount;
+        this.bidCount++;
+        this.winner = bidder;
+    }
+
+    public void sell(Member buyer) {
+        this.status = AuctionStatus.SOLD;
+        this.winner = buyer;
+        this.currentPrice = this.buyNowPrice;
+    }
+
+    public void extendEndTime(LocalDateTime newEndTime) {
+        this.endTime = newEndTime;
+    }
+
+    public boolean isActive() {
+        return this.status == AuctionStatus.ACTIVE;
+    }
 }
