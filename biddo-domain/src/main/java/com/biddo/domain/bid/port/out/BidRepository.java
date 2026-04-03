@@ -13,5 +13,7 @@ public interface BidRepository {
 
     List<Bid> findByAuctionIdOrderByBidAmountDesc(Long auctionId);
 
+    List<Bid> findBidHistory(Long auctionId, Long cursor, int size);
+
     void clearWinningBid(Long auctionId);
 }

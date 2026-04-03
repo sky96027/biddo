@@ -109,8 +109,8 @@ public class BidService {
         autoBid.deactivate();
     }
 
-    public List<Bid> getBidHistory(Long auctionId) {
-        return bidRepository.findByAuctionIdOrderByBidAmountDesc(auctionId);
+    public List<Bid> getBidHistory(Long auctionId, Long cursor, int size) {
+        return bidRepository.findBidHistory(auctionId, cursor, size);
     }
 
     public static long calculateMinIncrement(long currentPrice) {
