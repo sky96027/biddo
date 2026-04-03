@@ -3,6 +3,7 @@ package com.biddo.infra.bid;
 import com.biddo.domain.bid.model.Bid;
 import com.biddo.domain.bid.port.out.BidRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -27,6 +28,14 @@ public class BidRepositoryImpl implements BidRepository {
     @Override
     public List<Bid> findByAuctionIdOrderByBidAmountDesc(Long auctionId) {
         return bidJpaRepository.findByAuctionIdOrderByBidAmountDesc(auctionId);
+    }
+
+    @Override
+    public List<Bid> findBidHistory(Long auctionId, Long cursor, int size) {
+        PageRequest pageRequest = PageRequest.of(0, size);
+        return cursor == null
+                ? bidJpaRepository.findBidHistoryFirstPage(auctionId, pageRequest)
+                : bidJpaRepository.findBidHistoryWithCursor(auctionId, cursor, pageRequest);
     }
 
     @Override

@@ -13,12 +13,15 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ReviewService {
+
+    private static final int REVIEW_PERIOD_DAYS = 14;
 
     private final ReviewRepository reviewRepository;
     private final AuctionRepository auctionRepository;
@@ -29,6 +32,7 @@ public class ReviewService {
                 .orElseThrow(AuctionNotFoundException::new);
 
         validateAuctionEnded(auction);
+        validateReviewPeriod(auction);
         validateWinner(auction, reviewerId);
         validateNotAlreadyReviewed(auctionId, reviewerId);
 
@@ -47,6 +51,7 @@ public class ReviewService {
     public Review update(Long reviewId, Long memberId, int rating, String content) {
         Review review = findReviewById(reviewId);
         validateReviewer(review, memberId);
+        validateReviewPeriod(review.getAuction());
         review.update(rating, content);
         return review;
     }
@@ -55,6 +60,7 @@ public class ReviewService {
     public void delete(Long reviewId, Long memberId) {
         Review review = findReviewById(reviewId);
         validateReviewer(review, memberId);
+        validateReviewPeriod(review.getAuction());
         reviewRepository.delete(review);
     }
 
@@ -100,6 +106,12 @@ public class ReviewService {
     private void validateReviewer(Review review, Long memberId) {
         if (!review.isReviewer(memberId)) {
             throw new BusinessException(ReviewErrorCode.NOT_REVIEWER);
+        }
+    }
+
+    private void validateReviewPeriod(Auction auction) {
+        if (auction.getEndTime().plusDays(REVIEW_PERIOD_DAYS).isBefore(LocalDateTime.now())) {
+            throw new BusinessException(ReviewErrorCode.REVIEW_PERIOD_EXPIRED);
         }
     }
 }

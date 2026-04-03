@@ -5,6 +5,7 @@ import com.biddo.api.bid.dto.request.BidRequest;
 import com.biddo.api.bid.dto.response.AutoBidResponse;
 import com.biddo.api.bid.dto.response.BidResponse;
 import com.biddo.api.common.response.ApiResponse;
+import com.biddo.api.common.response.CursorResponse;
 import com.biddo.api.common.security.CustomUserDetails;
 import com.biddo.domain.bid.model.AutoBid;
 import com.biddo.domain.bid.model.Bid;
@@ -63,8 +64,21 @@ public class BidController {
     }
 
     @GetMapping("/bids")
-    public ApiResponse<List<BidResponse>> getBidHistory(@PathVariable Long auctionId) {
-        List<Bid> bids = bidService.getBidHistory(auctionId);
-        return ApiResponse.success(bids.stream().map(BidResponse::from).toList());
+    public ApiResponse<CursorResponse<BidResponse>> getBidHistory(
+            @PathVariable Long auctionId,
+            @RequestParam(required = false) Long cursor,
+            @RequestParam(defaultValue = "20") int size) {
+        int fetchSize = Math.min(size, 20);
+        List<Bid> bids = bidService.getBidHistory(auctionId, cursor, fetchSize + 1);
+
+        boolean hasNext = bids.size() > fetchSize;
+        List<Bid> content = hasNext ? bids.subList(0, fetchSize) : bids;
+        List<BidResponse> responses = content.stream().map(BidResponse::from).toList();
+
+        String nextCursor = hasNext
+                ? String.valueOf(content.get(content.size() - 1).getId())
+                : null;
+
+        return ApiResponse.success(CursorResponse.of(responses, nextCursor, hasNext));
     }
 }
