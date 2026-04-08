@@ -1,7 +1,9 @@
 package com.biddo.domain.auction.model;
 
+import com.biddo.domain.auction.exception.AuctionErrorCode;
 import com.biddo.domain.category.entity.Category;
 import com.biddo.domain.common.entity.BaseTimeEntity;
+import com.biddo.domain.common.exception.BusinessException;
 import com.biddo.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -83,6 +85,8 @@ public class Auction extends BaseTimeEntity {
     public Auction(Member seller, Category category, String title, String description,
                    ItemCondition condition, Long startingPrice, Long buyNowPrice,
                    LocalDateTime startTime, LocalDateTime endTime) {
+        validateStartingPrice(startingPrice);
+        validateBuyNowPrice(buyNowPrice, startingPrice);
         this.seller = seller;
         this.category = category;
         this.title = title;
@@ -101,6 +105,8 @@ public class Auction extends BaseTimeEntity {
     public void update(Category category, String title, String description,
                        ItemCondition condition, Long startingPrice, Long buyNowPrice,
                        LocalDateTime endTime) {
+        validateStartingPrice(startingPrice);
+        validateBuyNowPrice(buyNowPrice, startingPrice);
         this.category = category;
         this.title = title;
         this.description = description;
@@ -124,6 +130,9 @@ public class Auction extends BaseTimeEntity {
     }
 
     public void updateImages(List<AuctionImage> newImages) {
+        if (newImages == null || newImages.isEmpty() || newImages.size() > 10) {
+            throw new BusinessException(AuctionErrorCode.INVALID_IMAGE_COUNT);
+        }
         this.images.clear();
         this.images.addAll(newImages);
     }
@@ -146,5 +155,17 @@ public class Auction extends BaseTimeEntity {
 
     public boolean isActive() {
         return this.status == AuctionStatus.ACTIVE;
+    }
+
+    private void validateStartingPrice(Long startingPrice) {
+        if (startingPrice < 1000) {
+            throw new BusinessException(AuctionErrorCode.INVALID_STARTING_PRICE);
+        }
+    }
+
+    private void validateBuyNowPrice(Long buyNowPrice, Long startingPrice) {
+        if (buyNowPrice != null && buyNowPrice <= startingPrice) {
+            throw new BusinessException(AuctionErrorCode.INVALID_BUY_NOW_PRICE);
+        }
     }
 }

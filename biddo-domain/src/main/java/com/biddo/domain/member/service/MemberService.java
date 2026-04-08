@@ -59,6 +59,12 @@ public class MemberService {
         member.changePassword(encodedPassword);
     }
 
+    public void validatePassword(String rawPassword) {
+        if (rawPassword.length() < 8 || rawPassword.length() > 20) {
+            throw new BusinessException(MemberErrorCode.INVALID_PASSWORD_LENGTH);
+        }
+    }
+
     private void validateDuplicate(String email, String nickname) {
         if (memberRepository.existsByEmail(email)) {
             throw new BusinessException(MemberErrorCode.DUPLICATE_EMAIL);

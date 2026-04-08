@@ -21,6 +21,7 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
 
     public Member signup(String email, String password, String nickname) {
+        memberService.validatePassword(password);
         String encodedPassword = passwordEncoder.encode(password);
         return memberService.createMember(email, encodedPassword, nickname);
     }
@@ -58,6 +59,7 @@ public class AuthService {
     }
 
     public void changePassword(Long memberId, String currentPassword, String newPassword) {
+        memberService.validatePassword(newPassword);
         Member member = memberService.findById(memberId);
 
         if (!passwordEncoder.matches(currentPassword, member.getPassword())) {

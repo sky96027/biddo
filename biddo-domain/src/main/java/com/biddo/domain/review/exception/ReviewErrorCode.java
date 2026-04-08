@@ -13,7 +13,8 @@ public enum ReviewErrorCode implements ErrorCode {
     ALREADY_REVIEWED(409, "REVIEW_003", "이미 후기를 작성하였습니다."),
     NOT_REVIEWER(403, "REVIEW_004", "후기 작성자만 수정/삭제할 수 있습니다."),
     AUCTION_NOT_ENDED(409, "REVIEW_005", "종료된 경매에만 후기를 작성할 수 있습니다."),
-    REVIEW_PERIOD_EXPIRED(400, "REVIEW_006", "후기 작성 기한(2주)이 지났습니다.");
+    INVALID_RATING(400, "REVIEW_006", "별점은 1~5점이어야 합니다."),
+    REVIEW_PERIOD_EXPIRED(400, "REVIEW_007", "후기 작성 기한(2주)이 지났습니다.");
 
     private final int status;
     private final String code;

@@ -42,7 +42,6 @@ public class AuctionService {
         LocalDateTime effectiveStartTime = (startTime != null) ? startTime : LocalDateTime.now();
         validateAuctionTime(effectiveStartTime, endTime);
         validateAuctionDuration(effectiveStartTime, endTime);
-        validateBuyNowPrice(buyNowPrice, startingPrice);
 
         Auction auction = Auction.builder()
                 .seller(seller)
@@ -85,7 +84,6 @@ public class AuctionService {
                 .orElseThrow(() -> new BusinessException(AuctionErrorCode.CATEGORY_NOT_FOUND));
         validateAuctionTime(auction.getStartTime(), endTime);
         validateAuctionDuration(auction.getStartTime(), endTime);
-        validateBuyNowPrice(buyNowPrice, startingPrice);
 
         auction.update(category, title, description, condition, startingPrice, buyNowPrice, endTime);
 
@@ -143,12 +141,6 @@ public class AuctionService {
         Duration duration = Duration.between(startTime, endTime);
         if (duration.toHours() < 1 || duration.toDays() > 7) {
             throw new BusinessException(AuctionErrorCode.INVALID_AUCTION_DURATION);
-        }
-    }
-
-    private void validateBuyNowPrice(Long buyNowPrice, Long startingPrice) {
-        if (buyNowPrice != null && buyNowPrice <= startingPrice) {
-            throw new BusinessException(AuctionErrorCode.INVALID_BUY_NOW_PRICE);
         }
     }
 }

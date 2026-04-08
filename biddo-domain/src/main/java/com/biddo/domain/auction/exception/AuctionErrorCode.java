@@ -13,8 +13,10 @@ public enum AuctionErrorCode implements ErrorCode {
     NOT_AUCTION_SELLER(403, "AUCTION_003", "경매 판매자만 수행할 수 있습니다."),
     CATEGORY_NOT_FOUND(404, "AUCTION_004", "카테고리를 찾을 수 없습니다."),
     INVALID_AUCTION_TIME(400, "AUCTION_005", "경매 종료 시간은 시작 시간 이후여야 합니다."),
-    INVALID_AUCTION_DURATION(400, "AUCTION_006", "경매 기간은 최소 1시간, 최대 7일이어야 합니다."),
-    INVALID_BUY_NOW_PRICE(400, "AUCTION_007", "즉시구매가는 시작가보다 높아야 합니다.");
+    INVALID_STARTING_PRICE(400, "AUCTION_006", "시작가는 1,000원 이상이어야 합니다."),
+    INVALID_IMAGE_COUNT(400, "AUCTION_007", "이미지는 1장 이상 10장 이하여야 합니다."),
+    INVALID_AUCTION_DURATION(400, "AUCTION_008", "경매 기간은 1시간 이상 7일 이하여야 합니다."),
+    INVALID_BUY_NOW_PRICE(400, "AUCTION_009", "즉시 구매가는 시작가보다 높아야 합니다.");
 
     private final int status;
     private final String code;

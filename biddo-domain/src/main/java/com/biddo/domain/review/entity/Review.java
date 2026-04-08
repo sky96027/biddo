@@ -1,7 +1,9 @@
 package com.biddo.domain.review.entity;
 
 import com.biddo.domain.auction.model.Auction;
+import com.biddo.domain.common.exception.BusinessException;
 import com.biddo.domain.member.entity.Member;
+import com.biddo.domain.review.exception.ReviewErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -46,6 +48,7 @@ public class Review {
 
     @Builder
     public Review(Auction auction, Member reviewer, Member reviewee, int rating, String content) {
+        validateRating(rating);
         this.auction = auction;
         this.reviewer = reviewer;
         this.reviewee = reviewee;
@@ -55,11 +58,18 @@ public class Review {
     }
 
     public void update(int rating, String content) {
+        validateRating(rating);
         this.rating = rating;
         this.content = content;
     }
 
     public boolean isReviewer(Long memberId) {
         return this.reviewer.getId().equals(memberId);
+    }
+
+    private void validateRating(int rating) {
+        if (rating < 1 || rating > 5) {
+            throw new BusinessException(ReviewErrorCode.INVALID_RATING);
+        }
     }
 }
