@@ -3,8 +3,6 @@ package com.biddo.api.auction.dto.request;
 import com.biddo.domain.auction.model.ItemCondition;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -16,7 +14,6 @@ import java.util.List;
 public class AuctionCreateRequest {
 
     @NotBlank(message = "상품명은 필수입니다.")
-    @Size(max = 200, message = "상품명은 200자 이하여야 합니다.")
     private String title;
 
     @NotBlank(message = "상품 설명은 필수입니다.")
@@ -29,7 +26,6 @@ public class AuctionCreateRequest {
     private ItemCondition condition;
 
     @NotNull(message = "시작가는 필수입니다.")
-    @Positive(message = "시작가는 0보다 커야 합니다.")
     private Long startingPrice;
 
     private Long buyNowPrice;

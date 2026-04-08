@@ -180,6 +180,12 @@ biddo/
 - `BusinessException extends RuntimeException`
 - `@RestControllerAdvice GlobalExceptionHandler`
 
+### 도메인 모델 책임 원칙
+
+- **엔티티/모델이 자기 불변식을 보호** (값 검증, 상태 전이, 도메인 판단, 단순 계산)
+- **서비스는 예외 케이스만** (DB 조회 필요한 검증, 인코딩 전 원문 검증, 교차 엔티티 검증)
+- **DTO는 형식 검증만** (`@NotNull`, `@NotBlank`, `@Email`). 비즈니스 규칙(`@Min`, `@Size`, `@Positive`) 금지
+
 ### 테스트
 
 - 단위: JUnit 5 + Mockito (Service, 입찰/자동입찰 로직 필수)

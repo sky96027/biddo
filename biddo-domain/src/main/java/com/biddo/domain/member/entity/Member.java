@@ -1,6 +1,8 @@
 package com.biddo.domain.member.entity;
 
 import com.biddo.domain.common.entity.BaseTimeEntity;
+import com.biddo.domain.common.exception.BusinessException;
+import com.biddo.domain.member.exception.MemberErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -44,6 +46,7 @@ public class Member extends BaseTimeEntity {
 
     @Builder
     public Member(String email, String password, String nickname) {
+        validateNickname(nickname);
         this.email = email;
         this.password = password;
         this.nickname = nickname;
@@ -52,12 +55,30 @@ public class Member extends BaseTimeEntity {
     }
 
     public void updateProfile(String nickname, String introduction, String profileImageUrl) {
-        if (nickname != null) this.nickname = nickname;
-        if (introduction != null) this.introduction = introduction;
+        if (nickname != null) {
+            validateNickname(nickname);
+            this.nickname = nickname;
+        }
+        if (introduction != null) {
+            validateIntroduction(introduction);
+            this.introduction = introduction;
+        }
         if (profileImageUrl != null) this.profileImageUrl = profileImageUrl;
     }
 
     public void changePassword(String encodedPassword) {
         this.password = encodedPassword;
+    }
+
+    private void validateNickname(String nickname) {
+        if (nickname.length() < 2 || nickname.length() > 50) {
+            throw new BusinessException(MemberErrorCode.INVALID_NICKNAME_LENGTH);
+        }
+    }
+
+    private void validateIntroduction(String introduction) {
+        if (introduction.length() > 500) {
+            throw new BusinessException(MemberErrorCode.INVALID_INTRODUCTION_LENGTH);
+        }
     }
 }

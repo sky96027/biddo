@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -40,6 +41,7 @@ public class AuctionService {
 
         LocalDateTime effectiveStartTime = (startTime != null) ? startTime : LocalDateTime.now();
         validateAuctionTime(effectiveStartTime, endTime);
+        validateAuctionDuration(effectiveStartTime, endTime);
 
         Auction auction = Auction.builder()
                 .seller(seller)
@@ -81,6 +83,7 @@ public class AuctionService {
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new BusinessException(AuctionErrorCode.CATEGORY_NOT_FOUND));
         validateAuctionTime(auction.getStartTime(), endTime);
+        validateAuctionDuration(auction.getStartTime(), endTime);
 
         auction.update(category, title, description, condition, startingPrice, buyNowPrice, endTime);
 
@@ -131,6 +134,13 @@ public class AuctionService {
     private void validateAuctionTime(LocalDateTime startTime, LocalDateTime endTime) {
         if (endTime.isBefore(startTime) || endTime.isEqual(startTime)) {
             throw new BusinessException(AuctionErrorCode.INVALID_AUCTION_TIME);
+        }
+    }
+
+    private void validateAuctionDuration(LocalDateTime startTime, LocalDateTime endTime) {
+        Duration duration = Duration.between(startTime, endTime);
+        if (duration.toHours() < 1 || duration.toDays() > 7) {
+            throw new BusinessException(AuctionErrorCode.INVALID_AUCTION_DURATION);
         }
     }
 }
