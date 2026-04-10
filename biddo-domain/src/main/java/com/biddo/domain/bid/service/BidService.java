@@ -11,6 +11,7 @@ import com.biddo.domain.bid.model.BidType;
 import com.biddo.domain.bid.port.out.AutoBidRepository;
 import com.biddo.domain.bid.port.out.BidEventPublisher;
 import com.biddo.domain.bid.port.out.BidRepository;
+import com.biddo.domain.chat.service.ChatService;
 import com.biddo.domain.common.exception.BusinessException;
 import com.biddo.domain.member.entity.Member;
 import com.biddo.domain.member.exception.MemberErrorCode;
@@ -36,6 +37,7 @@ public class BidService {
     private final AuctionRepository auctionRepository;
     private final MemberRepository memberRepository;
     private final BidEventPublisher bidEventPublisher;
+    private final ChatService chatService;
 
     @Transactional
     public Bid placeBid(Long auctionId, Long bidderId, Long bidAmount) {
@@ -70,6 +72,7 @@ public class BidService {
         Bid bid = createBid(auction, bidder, auction.getBuyNowPrice(), BidType.BUY_NOW);
         auction.sell(bidder);
         autoBidRepository.deactivateAllByAuctionId(auctionId);
+        chatService.createRoom(auction);
         bidEventPublisher.publishBidPlaced(bid);
 
         return bid;

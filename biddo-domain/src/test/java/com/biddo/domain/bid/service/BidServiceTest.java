@@ -12,6 +12,7 @@ import com.biddo.domain.bid.port.out.AutoBidRepository;
 import com.biddo.domain.bid.port.out.BidEventPublisher;
 import com.biddo.domain.bid.port.out.BidRepository;
 import com.biddo.domain.category.entity.Category;
+import com.biddo.domain.chat.service.ChatService;
 import com.biddo.domain.common.exception.BusinessException;
 import com.biddo.domain.member.entity.Member;
 import com.biddo.domain.member.repository.MemberRepository;
@@ -56,6 +57,9 @@ class BidServiceTest {
 
     @Mock
     private BidEventPublisher bidEventPublisher;
+
+    @Mock
+    private ChatService chatService;
 
     private Member seller;
     private Member bidder;
@@ -186,6 +190,7 @@ class BidServiceTest {
             assertThat(result.getBidAmount()).isEqualTo(1_000_000L);
             assertThat(auctionWithBuyNow.getStatus()).isEqualTo(AuctionStatus.SOLD);
             verify(autoBidRepository).deactivateAllByAuctionId(1L);
+            verify(chatService).createRoom(auctionWithBuyNow);
         }
 
         @Test
