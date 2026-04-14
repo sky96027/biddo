@@ -46,6 +46,9 @@ erDiagram
 | introduction | VARCHAR(500) |  | 자기소개 |
 | trust_score | DECIMAL(2,1) | DEFAULT 0.0, CHECK(0.0~5.0) | 신뢰도 점수 (0.0~5.0) |
 | role | VARCHAR(20) | DEFAULT 'USER' | 권한 (USER, ADMIN) |
+| ban_type | VARCHAR(20) | | 제재 유형 (WARNING, SUSPEND, BAN) |
+| ban_reason | VARCHAR(500) | | 제재 사유 |
+| ban_end_date | TIMESTAMP | | 제재 종료일 (SUSPEND 시 사용) |
 | created_at | TIMESTAMP | NOT NULL | 가입일 |
 | updated_at | TIMESTAMP | NOT NULL | 수정일 |
 
