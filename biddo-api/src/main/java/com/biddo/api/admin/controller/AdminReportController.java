@@ -1,4 +1,4 @@
-package com.biddo.api.report.controller;
+package com.biddo.api.admin.controller;
 
 import com.biddo.api.common.response.ApiResponse;
 import com.biddo.api.common.response.CursorResponse;

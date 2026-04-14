@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "member")
@@ -44,6 +45,15 @@ public class Member extends BaseTimeEntity {
     @Column(nullable = false, length = 20)
     private MemberRole role;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private BanType banType;
+
+    @Column(length = 500)
+    private String banReason;
+
+    private LocalDateTime banEndDate;
+
     @Builder
     public Member(String email, String password, String nickname) {
         validateNickname(nickname);
@@ -68,6 +78,27 @@ public class Member extends BaseTimeEntity {
 
     public void changePassword(String encodedPassword) {
         this.password = encodedPassword;
+    }
+
+    public void ban(BanType banType, String reason, LocalDateTime endDate) {
+        this.banType = banType;
+        this.banReason = reason;
+        this.banEndDate = endDate;
+    }
+
+    public void unban() {
+        this.banType = null;
+        this.banReason = null;
+        this.banEndDate = null;
+    }
+
+    public boolean isBanned() {
+        if (this.banType == null) return false;
+        if (this.banType == BanType.BAN) return true;
+        if (this.banType == BanType.SUSPEND && this.banEndDate != null) {
+            return LocalDateTime.now().isBefore(this.banEndDate);
+        }
+        return false;
     }
 
     private void validateNickname(String nickname) {

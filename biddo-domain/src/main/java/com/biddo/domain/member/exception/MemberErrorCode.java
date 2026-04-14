@@ -16,7 +16,9 @@ public enum MemberErrorCode implements ErrorCode {
     INVALID_REFRESH_TOKEN(401, "MEMBER_006", "유효하지 않은 Refresh Token입니다."),
     INVALID_PASSWORD_LENGTH(400, "MEMBER_007", "비밀번호는 8~20자여야 합니다."),
     INVALID_NICKNAME_LENGTH(400, "MEMBER_008", "닉네임은 2~50자여야 합니다."),
-    INVALID_INTRODUCTION_LENGTH(400, "MEMBER_009", "자기소개는 500자 이내여야 합니다.");
+    INVALID_INTRODUCTION_LENGTH(400, "MEMBER_009", "자기소개는 500자 이내여야 합니다."),
+    MEMBER_BANNED(403, "MEMBER_010", "제재된 회원입니다."),
+    CANNOT_BAN_ADMIN(400, "MEMBER_011", "관리자 계정은 제재할 수 없습니다.");
 
     private final int status;
     private final String code;
