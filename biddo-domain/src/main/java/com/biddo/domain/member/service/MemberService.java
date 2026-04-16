@@ -1,13 +1,17 @@
 package com.biddo.domain.member.service;
 
 import com.biddo.domain.common.exception.BusinessException;
+import com.biddo.domain.member.entity.BanType;
 import com.biddo.domain.member.entity.Member;
+import com.biddo.domain.member.entity.MemberRole;
 import com.biddo.domain.member.exception.MemberErrorCode;
 import com.biddo.domain.member.exception.MemberNotFoundException;
 import com.biddo.domain.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -63,6 +67,29 @@ public class MemberService {
         if (rawPassword.length() < 8 || rawPassword.length() > 20) {
             throw new BusinessException(MemberErrorCode.INVALID_PASSWORD_LENGTH);
         }
+    }
+
+    @Transactional
+    public Member ban(Long memberId, BanType banType, String reason, Integer durationDays) {
+        Member member = findById(memberId);
+        if (member.getRole() == MemberRole.ADMIN) {
+            throw new BusinessException(MemberErrorCode.CANNOT_BAN_ADMIN);
+        }
+
+        LocalDateTime endDate = null;
+        if (banType == BanType.SUSPEND && durationDays != null) {
+            endDate = LocalDateTime.now().plusDays(durationDays);
+        }
+
+        member.ban(banType, reason, endDate);
+        return member;
+    }
+
+    @Transactional
+    public Member unban(Long memberId) {
+        Member member = findById(memberId);
+        member.unban();
+        return member;
     }
 
     private void validateDuplicate(String email, String nickname) {

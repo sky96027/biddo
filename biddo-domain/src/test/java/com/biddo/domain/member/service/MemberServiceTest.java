@@ -1,7 +1,9 @@
 package com.biddo.domain.member.service;
 
 import com.biddo.domain.common.exception.BusinessException;
+import com.biddo.domain.member.entity.BanType;
 import com.biddo.domain.member.entity.Member;
+import com.biddo.domain.member.entity.MemberRole;
 import com.biddo.domain.member.exception.MemberErrorCode;
 import com.biddo.domain.member.repository.MemberRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -98,6 +100,83 @@ class MemberServiceTest {
                     .isInstanceOf(BusinessException.class)
                     .extracting(e -> ((BusinessException) e).getErrorCode())
                     .isEqualTo(MemberErrorCode.DUPLICATE_NICKNAME);
+        }
+    }
+
+    @Nested
+    @DisplayName("계정 제재")
+    class Ban {
+
+        @Test
+        @DisplayName("제재 성공 - WARNING")
+        void banWarning() {
+            Member member = Member.builder().email("bad@test.com").password("encoded").nickname("badUser").build();
+            given(memberRepository.findById(1L)).willReturn(Optional.of(member));
+
+            Member result = memberService.ban(1L, BanType.WARNING, "규칙 위반", null);
+
+            assertThat(result.getBanType()).isEqualTo(BanType.WARNING);
+            assertThat(result.getBanReason()).isEqualTo("규칙 위반");
+        }
+
+        @Test
+        @DisplayName("제재 성공 - SUSPEND")
+        void banSuspend() {
+            Member member = Member.builder().email("bad@test.com").password("encoded").nickname("badUser").build();
+            given(memberRepository.findById(1L)).willReturn(Optional.of(member));
+
+            Member result = memberService.ban(1L, BanType.SUSPEND, "반복 위반", 7);
+
+            assertThat(result.getBanType()).isEqualTo(BanType.SUSPEND);
+            assertThat(result.getBanEndDate()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("제재 성공 - BAN")
+        void banPermanent() {
+            Member member = Member.builder().email("bad@test.com").password("encoded").nickname("badUser").build();
+            given(memberRepository.findById(1L)).willReturn(Optional.of(member));
+
+            Member result = memberService.ban(1L, BanType.BAN, "영구 정지", null);
+
+            assertThat(result.getBanType()).isEqualTo(BanType.BAN);
+            assertThat(result.isBanned()).isTrue();
+        }
+
+        @Test
+        @DisplayName("제재 실패 - ADMIN 계정")
+        void banAdmin() {
+            Member admin = Member.builder().email("admin@test.com").password("encoded").nickname("admin").build();
+            setField(admin, "role", MemberRole.ADMIN);
+            given(memberRepository.findById(1L)).willReturn(Optional.of(admin));
+
+            assertThatThrownBy(() -> memberService.ban(1L, BanType.BAN, "테스트", null))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(MemberErrorCode.CANNOT_BAN_ADMIN);
+        }
+
+        @Test
+        @DisplayName("제재 해제 성공")
+        void unban() {
+            Member member = Member.builder().email("bad@test.com").password("encoded").nickname("badUser").build();
+            member.ban(BanType.SUSPEND, "위반", null);
+            given(memberRepository.findById(1L)).willReturn(Optional.of(member));
+
+            Member result = memberService.unban(1L);
+
+            assertThat(result.getBanType()).isNull();
+            assertThat(result.isBanned()).isFalse();
+        }
+    }
+
+    private void setField(Object entity, String fieldName, Object value) {
+        try {
+            java.lang.reflect.Field field = entity.getClass().getDeclaredField(fieldName);
+            field.setAccessible(true);
+            field.set(entity, value);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 }

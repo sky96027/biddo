@@ -40,7 +40,7 @@ biddo/
 
 ## ERD 핵심 엔티티 (12개)
 
-1. **Member** — email(UNIQUE), password(BCrypt), nickname(UNIQUE), trust_score(DECIMAL(2,1), 0.0~5.0), role(USER/ADMIN)
+1. **Member** — email(UNIQUE), password(BCrypt), nickname(UNIQUE), trust_score(DECIMAL(2,1), 0.0~5.0), role(USER/ADMIN), ban_type(WARNING/SUSPEND/BAN), ban_reason, ban_end_date
 2. **Category** — 계층형(parent_id self-ref, depth 0/1/2)
 3. **Auction** — seller_id(FK→Member), status(PENDING/ACTIVE/ENDED/CANCELLED/SOLD), start_time, end_time, current_price, buy_now_price, winner_id
 4. **Auction Image** — auction_id(FK), image_url(S3), sort_order
@@ -113,7 +113,7 @@ biddo/
 
 **Report**: 신고 접수, 내 신고 내역
 
-**Admin**: 신고 관리, 경매 강제 삭제, 계정 제재(WARNING/SUSPEND/BAN)
+**Admin**: 신고 관리, 경매 강제 삭제, 계정 제재(WARNING/SUSPEND/BAN), 제재 해제
 
 ### WebSocket
 

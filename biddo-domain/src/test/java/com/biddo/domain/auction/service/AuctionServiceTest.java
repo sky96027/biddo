@@ -204,6 +204,31 @@ class AuctionServiceTest {
                 .isInstanceOf(AuctionNotFoundException.class);
     }
 
+    @Test
+    @DisplayName("관리자 경매 강제 취소 성공 - ACTIVE 경매")
+    void forceCancel_active() {
+        Auction auction = createPendingAuction();
+        setField(auction, "status", AuctionStatus.ACTIVE);
+        given(auctionRepository.findById(1L)).willReturn(Optional.of(auction));
+
+        auctionService.forceCancel(1L);
+
+        assertThat(auction.getStatus()).isEqualTo(AuctionStatus.CANCELLED);
+    }
+
+    @Test
+    @DisplayName("관리자 경매 강제 취소 실패 - 이미 취소됨")
+    void forceCancel_alreadyCancelled() {
+        Auction auction = createPendingAuction();
+        auction.cancel();
+        given(auctionRepository.findById(1L)).willReturn(Optional.of(auction));
+
+        assertThatThrownBy(() -> auctionService.forceCancel(1L))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(AuctionErrorCode.AUCTION_ALREADY_CANCELLED));
+    }
+
     private Auction createPendingAuction() {
         Auction auction = Auction.builder()
                 .seller(seller)
@@ -225,6 +250,16 @@ class AuctionServiceTest {
             java.lang.reflect.Field idField = entity.getClass().getDeclaredField("id");
             idField.setAccessible(true);
             idField.set(entity, id);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void setField(Object entity, String fieldName, Object value) {
+        try {
+            java.lang.reflect.Field field = entity.getClass().getDeclaredField(fieldName);
+            field.setAccessible(true);
+            field.set(entity, value);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

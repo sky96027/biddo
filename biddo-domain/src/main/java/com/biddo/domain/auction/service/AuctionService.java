@@ -4,6 +4,7 @@ import com.biddo.domain.auction.exception.AuctionErrorCode;
 import com.biddo.domain.auction.exception.AuctionNotFoundException;
 import com.biddo.domain.auction.model.Auction;
 import com.biddo.domain.auction.model.AuctionImage;
+import com.biddo.domain.auction.model.AuctionStatus;
 import com.biddo.domain.auction.model.ItemCondition;
 import com.biddo.domain.auction.port.out.AuctionRepository;
 import com.biddo.domain.category.entity.Category;
@@ -106,6 +107,15 @@ public class AuctionService {
         Auction auction = findAuctionById(auctionId);
         validateSeller(auction, memberId);
         validatePending(auction);
+        auction.cancel();
+    }
+
+    @Transactional
+    public void forceCancel(Long auctionId) {
+        Auction auction = findAuctionById(auctionId);
+        if (auction.getStatus() == AuctionStatus.CANCELLED) {
+            throw new BusinessException(AuctionErrorCode.AUCTION_ALREADY_CANCELLED);
+        }
         auction.cancel();
     }
 

@@ -432,6 +432,13 @@ Presigned URL 방식으로 클라이언트가 S3에 직접 업로드합니다. �
 | Response | 제재 정보 |
 | 비고 | banType: WARNING(경고), SUSPEND(일시정지), BAN(영구정지) |
 
+## `DELETE /api/v1/admin/members/{memberId}/ban` — 제재 해제
+
+| 구분 | 내용 |
+| --- | --- |
+| 인증 | 필요 (ADMIN) |
+| Response | 해제된 회원 정보 (banType, banReason, banEndDate가 null) |
+
 ---
 
 # WebSocket 엔드포인트
