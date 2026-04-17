@@ -3,6 +3,7 @@ package com.biddo.domain.bid.service;
 import com.biddo.domain.auction.exception.AuctionNotFoundException;
 import com.biddo.domain.auction.model.Auction;
 import com.biddo.domain.auction.model.AuctionStatus;
+import com.biddo.domain.auction.port.out.AuctionEventPublisher;
 import com.biddo.domain.auction.port.out.AuctionRepository;
 import com.biddo.domain.bid.exception.BidErrorCode;
 import com.biddo.domain.bid.model.AutoBid;
@@ -37,6 +38,7 @@ public class BidService {
     private final AuctionRepository auctionRepository;
     private final MemberRepository memberRepository;
     private final BidEventPublisher bidEventPublisher;
+    private final AuctionEventPublisher auctionEventPublisher;
     private final ChatService chatService;
 
     @Transactional
@@ -74,6 +76,7 @@ public class BidService {
         autoBidRepository.deactivateAllByAuctionId(auctionId);
         chatService.createRoom(auction);
         bidEventPublisher.publishBidPlaced(bid);
+        auctionEventPublisher.publishAuctionSold(auction);
 
         return bid;
     }

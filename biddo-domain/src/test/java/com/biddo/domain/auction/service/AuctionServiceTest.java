@@ -5,6 +5,7 @@ import com.biddo.domain.auction.exception.AuctionNotFoundException;
 import com.biddo.domain.auction.model.Auction;
 import com.biddo.domain.auction.model.AuctionStatus;
 import com.biddo.domain.auction.model.ItemCondition;
+import com.biddo.domain.auction.port.out.AuctionEventPublisher;
 import com.biddo.domain.auction.port.out.AuctionRepository;
 import com.biddo.domain.category.entity.Category;
 import com.biddo.domain.category.repository.CategoryRepository;
@@ -28,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class AuctionServiceTest {
@@ -44,6 +46,9 @@ class AuctionServiceTest {
     @Mock
     private CategoryRepository categoryRepository;
 
+    @Mock
+    private AuctionEventPublisher auctionEventPublisher;
+
     private Member seller;
     private Category category;
     private LocalDateTime startTime;
@@ -56,7 +61,6 @@ class AuctionServiceTest {
                 .password("encoded")
                 .nickname("seller")
                 .build();
-        // ID를 리플렉션으로 설정
         setId(seller, 1L);
 
         category = Category.builder()
@@ -88,6 +92,7 @@ class AuctionServiceTest {
         assertThat(result.getStatus()).isEqualTo(AuctionStatus.PENDING);
         assertThat(result.getCurrentPrice()).isEqualTo(500000L);
         assertThat(result.getImages()).hasSize(1);
+        verify(auctionEventPublisher).publishAuctionCreated(result);
     }
 
     @Test
@@ -116,6 +121,7 @@ class AuctionServiceTest {
         assertThat(result.getTitle()).isEqualTo("수정된 제목");
         assertThat(result.getStartingPrice()).isEqualTo(450000L);
         assertThat(result.getBuyNowPrice()).isEqualTo(800000L);
+        verify(auctionEventPublisher).publishAuctionUpdated(result);
     }
 
     @Test
@@ -135,7 +141,7 @@ class AuctionServiceTest {
     @DisplayName("경매 수정 실패 - PENDING 상태가 아님")
     void update_notPending() {
         Auction auction = createPendingAuction();
-        auction.cancel(); // CANCELLED 상태로 변경
+        auction.cancel();
         given(auctionRepository.findById(1L)).willReturn(Optional.of(auction));
 
         assertThatThrownBy(() -> auctionService.update(1L, 1L, 9L, "제목", "설명",
@@ -154,6 +160,7 @@ class AuctionServiceTest {
         auctionService.cancel(1L, 1L);
 
         assertThat(auction.getStatus()).isEqualTo(AuctionStatus.CANCELLED);
+        verify(auctionEventPublisher).publishAuctionCancelled(auction);
     }
 
     @Test
@@ -214,6 +221,7 @@ class AuctionServiceTest {
         auctionService.forceCancel(1L);
 
         assertThat(auction.getStatus()).isEqualTo(AuctionStatus.CANCELLED);
+        verify(auctionEventPublisher).publishAuctionCancelled(auction);
     }
 
     @Test

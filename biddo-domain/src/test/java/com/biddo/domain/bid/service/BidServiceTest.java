@@ -3,6 +3,7 @@ package com.biddo.domain.bid.service;
 import com.biddo.domain.auction.model.Auction;
 import com.biddo.domain.auction.model.AuctionStatus;
 import com.biddo.domain.auction.model.ItemCondition;
+import com.biddo.domain.auction.port.out.AuctionEventPublisher;
 import com.biddo.domain.auction.port.out.AuctionRepository;
 import com.biddo.domain.bid.exception.BidErrorCode;
 import com.biddo.domain.bid.model.AutoBid;
@@ -57,6 +58,9 @@ class BidServiceTest {
 
     @Mock
     private BidEventPublisher bidEventPublisher;
+
+    @Mock
+    private AuctionEventPublisher auctionEventPublisher;
 
     @Mock
     private ChatService chatService;
@@ -191,6 +195,7 @@ class BidServiceTest {
             assertThat(auctionWithBuyNow.getStatus()).isEqualTo(AuctionStatus.SOLD);
             verify(autoBidRepository).deactivateAllByAuctionId(1L);
             verify(chatService).createRoom(auctionWithBuyNow);
+            verify(auctionEventPublisher).publishAuctionSold(auctionWithBuyNow);
         }
 
         @Test
@@ -269,14 +274,14 @@ class BidServiceTest {
         @DisplayName("0~9,999원: 10%")
         void tier1() {
             assertThat(BidService.calculateMinIncrement(5_000L)).isEqualTo(500L);
-            assertThat(BidService.calculateMinIncrement(3_340L)).isEqualTo(400L); // 334 -> 400 올림
+            assertThat(BidService.calculateMinIncrement(3_340L)).isEqualTo(400L);
         }
 
         @Test
         @DisplayName("10,000~99,999원: 5%")
         void tier2() {
             assertThat(BidService.calculateMinIncrement(50_000L)).isEqualTo(2_500L);
-            assertThat(BidService.calculateMinIncrement(33_000L)).isEqualTo(1_700L); // 1650 -> 1700 올림
+            assertThat(BidService.calculateMinIncrement(33_000L)).isEqualTo(1_700L);
         }
 
         @Test
@@ -343,15 +348,12 @@ class BidServiceTest {
             });
             given(auctionRepository.save(any(Auction.class))).willReturn(auction);
 
-            // 첫 호출: 수동 입찰 후 자동 입찰자 목록 반환
-            // 두 번째 호출: 자동 입찰 후 자동 입찰자 없음
             given(autoBidRepository.findActiveByAuctionIdExcludingBidder(anyLong(), anyLong()))
                     .willReturn(List.of(autoBid))
                     .willReturn(Collections.emptyList());
 
             bidService.placeBid(1L, 2L, 515_000L);
 
-            // 수동 입찰 + 자동 입찰 = 2회
             verify(bidRepository, times(2)).save(any(Bid.class));
             verify(bidEventPublisher, times(2)).publishBidPlaced(any(Bid.class));
         }

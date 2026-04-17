@@ -6,6 +6,7 @@ import com.biddo.domain.auction.model.Auction;
 import com.biddo.domain.auction.model.AuctionImage;
 import com.biddo.domain.auction.model.AuctionStatus;
 import com.biddo.domain.auction.model.ItemCondition;
+import com.biddo.domain.auction.port.out.AuctionEventPublisher;
 import com.biddo.domain.auction.port.out.AuctionRepository;
 import com.biddo.domain.category.entity.Category;
 import com.biddo.domain.category.repository.CategoryRepository;
@@ -30,6 +31,7 @@ public class AuctionService {
     private final AuctionRepository auctionRepository;
     private final MemberRepository memberRepository;
     private final CategoryRepository categoryRepository;
+    private final AuctionEventPublisher auctionEventPublisher;
 
     @Transactional
     public Auction create(Long sellerId, Long categoryId, String title, String description,
@@ -70,6 +72,7 @@ public class AuctionService {
             auction.updateImages(images);
         }
 
+        auctionEventPublisher.publishAuctionCreated(auction);
         return auction;
     }
 
@@ -99,6 +102,7 @@ public class AuctionService {
             auction.updateImages(images);
         }
 
+        auctionEventPublisher.publishAuctionUpdated(auction);
         return auction;
     }
 
@@ -108,6 +112,7 @@ public class AuctionService {
         validateSeller(auction, memberId);
         validatePending(auction);
         auction.cancel();
+        auctionEventPublisher.publishAuctionCancelled(auction);
     }
 
     @Transactional
@@ -117,6 +122,7 @@ public class AuctionService {
             throw new BusinessException(AuctionErrorCode.AUCTION_ALREADY_CANCELLED);
         }
         auction.cancel();
+        auctionEventPublisher.publishAuctionCancelled(auction);
     }
 
     public Auction findById(Long auctionId) {
