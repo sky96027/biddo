@@ -6,6 +6,7 @@ import com.biddo.domain.member.entity.Member;
 import com.biddo.domain.member.repository.MemberRepository;
 import com.biddo.infra.kafka.KafkaConfig;
 import com.biddo.infra.kafka.event.BidEvent;
+import com.biddo.infra.sse.AuctionSseService;
 import com.biddo.infra.websocket.dto.AuctionWebSocketMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,7 @@ public class BidWebSocketConsumer {
     private final AuctionRepository auctionRepository;
     private final MemberRepository memberRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final AuctionSseService auctionSseService;
 
     @Transactional(readOnly = true)
     @KafkaListener(topics = KafkaConfig.BID_EVENTS, groupId = "biddo-websocket")
@@ -56,6 +58,9 @@ public class BidWebSocketConsumer {
 
         String destination = "/topic/auction/" + event.getAuctionId();
         messagingTemplate.convertAndSend(destination, message);
+
+        // SSE 카운트다운 동기화 (endTime이 변경된 경우 = 스나이핑 방지 연장)
+        auctionSseService.broadcastCountdownExtended(event.getAuctionId(), auction.getEndTime());
 
         log.debug("WebSocket broadcast to {}: type={}, bidAmount={}", destination, message.getType(), event.getBidAmount());
     }

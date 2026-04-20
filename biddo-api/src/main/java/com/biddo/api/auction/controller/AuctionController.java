@@ -8,11 +8,14 @@ import com.biddo.api.common.response.ApiResponse;
 import com.biddo.api.common.security.CustomUserDetails;
 import com.biddo.domain.auction.model.Auction;
 import com.biddo.domain.auction.service.AuctionService;
+import com.biddo.infra.sse.AuctionSseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RestController
 @RequestMapping("/api/v1/auctions")
@@ -20,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuctionController {
 
     private final AuctionService auctionService;
+    private final AuctionSseService auctionSseService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -74,5 +78,11 @@ public class AuctionController {
     public ApiResponse<AuctionDetailResponse> getAuction(@PathVariable Long auctionId) {
         Auction auction = auctionService.findById(auctionId);
         return ApiResponse.success(AuctionDetailResponse.from(auction));
+    }
+
+    @GetMapping(value = "/{auctionId}/countdown", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter subscribeCountdown(@PathVariable Long auctionId) {
+        Auction auction = auctionService.findById(auctionId);
+        return auctionSseService.subscribe(auctionId, auction.getEndTime());
     }
 }
