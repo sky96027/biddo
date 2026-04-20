@@ -42,4 +42,9 @@ public class BidRepositoryImpl implements BidRepository {
     public void clearWinningBid(Long auctionId) {
         bidJpaRepository.clearWinningBid(auctionId);
     }
+
+    @Override
+    public List<Long> findDistinctBidderIdsByAuctionId(Long auctionId) {
+        return bidJpaRepository.findDistinctBidderIdsByAuctionId(auctionId);
+    }
 }

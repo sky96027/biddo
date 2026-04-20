@@ -29,4 +29,7 @@ public interface BidJpaRepository extends JpaRepository<Bid, Long> {
     @Modifying
     @Query("UPDATE Bid b SET b.isWinning = false WHERE b.auction.id = :auctionId AND b.isWinning = true")
     void clearWinningBid(@Param("auctionId") Long auctionId);
+
+    @Query("SELECT DISTINCT b.bidder.id FROM Bid b WHERE b.auction.id = :auctionId")
+    List<Long> findDistinctBidderIdsByAuctionId(@Param("auctionId") Long auctionId);
 }
