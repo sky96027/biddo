@@ -276,11 +276,73 @@ Presigned URL 방식으로 클라이언트가 S3에 직접 업로드합니다. �
 
 ## `GET /api/v1/search/auctions` — 경매 검색
 
-| 구분 | 내용 |  |  |  |  |
-| --- | --- | --- | --- | --- | --- |
-| 인증 | 불필요 |  |  |  |  |
-| Query | `?keyword=&categoryId=&minPrice=&maxPrice=&endWithin={1h | 24h | 3d}&sort={BID_COUNT | END_TIME | PRICE}&cursor=&size=20` |
-| Response | 페이지네이션 응답 (Elasticsearch 기반, ES 장애 시 DB fallback) |  |  |  |  |
+| 구분 | 내용 |
+| --- | --- |
+| 인증 | 불필요 (로그인 시 최근 검색어 자동 저장) |
+| Query | `?keyword=&categoryId=&minPrice=&maxPrice=&endWithin={1h,24h,3d}&sort={BID_COUNT,END_TIME,PRICE}&cursor=&size=20` |
+| Response | 페이지네이션 응답 (Elasticsearch 기반, ES 장애 시 DB fallback — Resilience4j CircuitBreaker) |
+
+## `GET /api/v1/search/recent` — 최근 검색어 조회
+
+| 구분 | 내용 |
+| --- | --- |
+| 인증 | 필요 |
+| Response | `["키워드1", "키워드2", ...]` (최대 10개, 최신순) |
+
+## `DELETE /api/v1/search/recent/{keyword}` — 최근 검색어 개별 삭제
+
+| 구분 | 내용 |
+| --- | --- |
+| 인증 | 필요 |
+| Response | 204 No Content |
+
+## `DELETE /api/v1/search/recent` — 최근 검색어 전체 삭제
+
+| 구분 | 내용 |
+| --- | --- |
+| 인증 | 필요 |
+| Response | 204 No Content |
+
+---
+
+# 키워드 알림 API (Keyword Alert)
+
+## `POST /api/v1/keyword-alerts` — 키워드 알림 등록
+
+| 구분 | 내용 |
+| --- | --- |
+| 인증 | 필요 |
+| Request Body | `{ keyword, categoryId(선택), maxPrice(선택) }` |
+| Response | `{ alertId, keyword, categoryId, maxPrice, isActive }` |
+
+## `GET /api/v1/keyword-alerts` — 내 키워드 알림 목록
+
+| 구분 | 내용 |
+| --- | --- |
+| 인증 | 필요 |
+| Response | 키워드 알림 목록 |
+
+## `PUT /api/v1/keyword-alerts/{alertId}` — 키워드 알림 수정
+
+| 구분 | 내용 |
+| --- | --- |
+| 인증 | 필요 |
+| Request Body | `{ categoryId, maxPrice }` |
+| Response | `{ alertId, keyword, categoryId, maxPrice, isActive }` |
+
+## `PATCH /api/v1/keyword-alerts/{alertId}/toggle` — 활성/비활성 토글
+
+| 구분 | 내용 |
+| --- | --- |
+| 인증 | 필요 |
+| Response | 200 OK |
+
+## `DELETE /api/v1/keyword-alerts/{alertId}` — 키워드 알림 삭제
+
+| 구분 | 내용 |
+| --- | --- |
+| 인증 | 필요 |
+| Response | 204 No Content |
 
 ---
 
