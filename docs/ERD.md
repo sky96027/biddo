@@ -317,8 +317,8 @@ PostgreSQL 외에 Redis에 저장하는 데이터입니다.
 
 | 토픽명 | Producer | Consumer | 설명 |
 | --- | --- | --- | --- |
-| `bid-events` | Bid Service | Notification / WebSocket / Auto-Bid Service / ES Sync Consumer | 입찰 이벤트 |
-| `auction-events` | Auction Service | Notification / Search Sync | 경매 생성/종료/취소 이벤트 |
+| `bid-events` | Bid Service | Notification / WebSocket / ES Sync | 입찰 이벤트 |
+| `auction-events` | Auction Service | Notification / WebSocket / ES Sync / Keyword Alert | 경매 생성/종료/취소 이벤트 |
 | `notification-events` | 각 Service | Notification Service | 알림 발송 이벤트 |
 | `chat-events` | Chat Service | WebSocket Handler | 채팅 메시지 이벤트 |
 
