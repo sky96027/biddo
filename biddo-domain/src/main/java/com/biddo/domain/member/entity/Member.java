@@ -92,6 +92,10 @@ public class Member extends BaseTimeEntity {
         this.banEndDate = null;
     }
 
+    public void updateTrustScore(BigDecimal score) {
+        this.trustScore = score;
+    }
+
     public boolean isBanned() {
         if (this.banType == null) return false;
         if (this.banType == BanType.BAN) return true;
