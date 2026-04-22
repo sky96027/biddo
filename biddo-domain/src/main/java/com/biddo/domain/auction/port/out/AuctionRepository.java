@@ -21,4 +21,6 @@ public interface AuctionRepository {
     List<Auction> findActiveAuctionsByBidderId(Long bidderId, Long cursor, int size);
 
     long countCompletedBySellerId(Long sellerId);
+
+    List<Auction> findByIdIn(List<Long> ids);
 }
