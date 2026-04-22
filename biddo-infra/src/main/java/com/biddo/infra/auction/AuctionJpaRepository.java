@@ -73,4 +73,7 @@ public interface AuctionJpaRepository extends JpaRepository<Auction, Long> {
     List<Auction> findActiveAuctionsByBidderIdWithCursor(@Param("bidderId") Long bidderId,
                                                          @Param("cursor") Long cursor,
                                                          Pageable pageable);
+
+    @Query("SELECT COUNT(a) FROM Auction a WHERE a.seller.id = :sellerId AND a.status IN ('ENDED', 'SOLD') AND a.winner IS NOT NULL")
+    long countCompletedBySellerId(@Param("sellerId") Long sellerId);
 }

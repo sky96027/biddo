@@ -59,4 +59,9 @@ public class AuctionRepositoryImpl implements AuctionRepository {
                 ? auctionJpaRepository.findActiveAuctionsByBidderIdFirstPage(bidderId, pageRequest)
                 : auctionJpaRepository.findActiveAuctionsByBidderIdWithCursor(bidderId, cursor, pageRequest);
     }
+
+    @Override
+    public long countCompletedBySellerId(Long sellerId) {
+        return auctionJpaRepository.countCompletedBySellerId(sellerId);
+    }
 }
