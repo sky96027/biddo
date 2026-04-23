@@ -64,4 +64,12 @@ public class AuctionRepositoryImpl implements AuctionRepository {
     public long countCompletedBySellerId(Long sellerId) {
         return auctionJpaRepository.countCompletedBySellerId(sellerId);
     }
+
+    @Override
+    public List<Auction> findByIdIn(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return auctionJpaRepository.findByIdInAndActive(ids);
+    }
 }

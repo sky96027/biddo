@@ -287,7 +287,7 @@ PostgreSQL 외에 Redis에 저장하는 데이터입니다.
 | `auction:{id}:bidders` | Set | 경매 종료 시 삭제 | 입찰 참여자 Set (입찰자 수 조회) |
 | `auction:{id}:top_bidder` | Hash | 경매 종료 시 삭제 | 최고 입찰자 정보 (id, nickname, amount) |
 | `member:{id}:session` | String | 14d | JWT Refresh Token |
-| `auction:popular` | Sorted Set | 1h | 인기 경매 랭킹 (score = 입찰수+조회수) |
+| `auction:popular` | Sorted Set | 1h | 인기 경매 랭킹 (score = 입찰 수, Kafka bid-events로 갱신) |
 | `search:recent:{memberId}` | List | 30d | 최근 검색어 |
 
 ---
@@ -317,7 +317,7 @@ PostgreSQL 외에 Redis에 저장하는 데이터입니다.
 
 | 토픽명 | Producer | Consumer | 설명 |
 | --- | --- | --- | --- |
-| `bid-events` | Bid Service | Notification / WebSocket / ES Sync | 입찰 이벤트 |
+| `bid-events` | Bid Service | Notification / WebSocket / ES Sync / Popular Auction | 입찰 이벤트 |
 | `auction-events` | Auction Service | Notification / WebSocket / ES Sync / Keyword Alert | 경매 생성/종료/취소 이벤트 |
 | `notification-events` | 각 Service | Notification Service | 알림 발송 이벤트 |
 | `chat-events` | Chat Service | WebSocket Handler | 채팅 메시지 이벤트 |

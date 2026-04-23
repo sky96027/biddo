@@ -211,6 +211,22 @@ Presigned URL 방식으로 클라이언트가 S3에 직접 업로드합니다. �
 > Wishlist(관심 등록) API — 미구현 보류. 향후 `POST/DELETE /api/v1/auctions/{auctionId}/wishlist` 형태로 추가 예정.
 >
 
+## `GET /api/v1/members/{memberId}` — 판매자 프로필 조회
+
+| 구분 | 내용 |
+| --- | --- |
+| 인증 | 불필요 |
+| Response | `{ memberId, nickname, profileImageUrl, introduction, trustScore, averageRating, reviewCount, completedTradeCount }` |
+
+## `GET /api/v1/auctions/popular` — 인기 경매 랭킹
+
+| 구분 | 내용 |
+| --- | --- |
+| 인증 | 불필요 |
+| Query | `?size=10` (최대 10) |
+| Response | `[ { auctionId, title, status, currentPrice, bidCount, thumbnailUrl, endTime } ]` |
+| 비고 | Redis Sorted Set 기반 입찰 수 인기순 정렬. ACTIVE 경매만 반환. |
+
 ## `GET /api/v1/auctions/{auctionId}` — 경매 상세 조회
 
 | 구분 | 내용 |

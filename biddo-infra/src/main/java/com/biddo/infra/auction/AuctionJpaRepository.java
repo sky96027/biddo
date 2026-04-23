@@ -76,4 +76,7 @@ public interface AuctionJpaRepository extends JpaRepository<Auction, Long> {
 
     @Query("SELECT COUNT(a) FROM Auction a WHERE a.seller.id = :sellerId AND a.status IN ('ENDED', 'SOLD') AND a.winner IS NOT NULL")
     long countCompletedBySellerId(@Param("sellerId") Long sellerId);
+
+    @Query("SELECT a FROM Auction a JOIN FETCH a.seller JOIN FETCH a.category LEFT JOIN FETCH a.images WHERE a.id IN :ids AND a.status = 'ACTIVE'")
+    List<Auction> findByIdInAndActive(@Param("ids") List<Long> ids);
 }
