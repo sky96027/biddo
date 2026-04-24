@@ -7,9 +7,12 @@ import com.biddo.api.auction.dto.response.AuctionResponse;
 import com.biddo.api.auction.dto.response.AuctionSummaryResponse;
 import com.biddo.api.common.response.ApiResponse;
 import com.biddo.api.common.security.CustomUserDetails;
+import com.biddo.api.search.dto.response.AuctionSearchResponse;
 import com.biddo.domain.auction.model.Auction;
 import com.biddo.domain.auction.port.out.AuctionRepository;
 import com.biddo.domain.auction.service.AuctionService;
+import com.biddo.domain.search.dto.AuctionSearchResult;
+import com.biddo.domain.search.port.AuctionSearchPort;
 import com.biddo.infra.redis.PopularAuctionRepository;
 import com.biddo.infra.sse.AuctionSseService;
 import jakarta.validation.Valid;
@@ -31,9 +34,11 @@ import java.util.stream.Collectors;
 public class AuctionController {
 
     private static final int POPULAR_SIZE = 10;
+    private static final int SIMILAR_SIZE = 6;
 
     private final AuctionService auctionService;
     private final AuctionRepository auctionRepository;
+    private final AuctionSearchPort auctionSearchPort;
     private final PopularAuctionRepository popularAuctionRepository;
     private final AuctionSseService auctionSseService;
 
@@ -109,6 +114,18 @@ public class AuctionController {
     public ApiResponse<AuctionDetailResponse> getAuction(@PathVariable Long auctionId) {
         Auction auction = auctionService.findById(auctionId);
         return ApiResponse.success(AuctionDetailResponse.from(auction));
+    }
+
+    @GetMapping("/{auctionId}/similar")
+    public ApiResponse<List<AuctionSearchResponse>> getSimilarAuctions(
+            @PathVariable Long auctionId,
+            @RequestParam(defaultValue = "6") int size) {
+        int fetchSize = Math.min(size, SIMILAR_SIZE);
+        List<AuctionSearchResult> results = auctionSearchPort.findSimilar(auctionId, fetchSize);
+        List<AuctionSearchResponse> responses = results.stream()
+                .map(AuctionSearchResponse::from)
+                .toList();
+        return ApiResponse.success(responses);
     }
 
     @GetMapping(value = "/{auctionId}/countdown", produces = MediaType.TEXT_EVENT_STREAM_VALUE)

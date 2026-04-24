@@ -8,4 +8,6 @@ import java.util.List;
 public interface AuctionSearchPort {
 
     List<AuctionSearchResult> search(AuctionSearchCondition condition);
+
+    List<AuctionSearchResult> findSimilar(Long auctionId, int size);
 }

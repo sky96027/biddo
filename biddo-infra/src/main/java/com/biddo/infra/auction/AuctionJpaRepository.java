@@ -79,4 +79,12 @@ public interface AuctionJpaRepository extends JpaRepository<Auction, Long> {
 
     @Query("SELECT a FROM Auction a JOIN FETCH a.seller JOIN FETCH a.category LEFT JOIN FETCH a.images WHERE a.id IN :ids AND a.status = 'ACTIVE'")
     List<Auction> findByIdInAndActive(@Param("ids") List<Long> ids);
+
+    @Query("""
+            SELECT a FROM Auction a JOIN FETCH a.seller JOIN FETCH a.category LEFT JOIN FETCH a.images
+            WHERE a.status = 'ACTIVE' AND a.id <> :auctionId
+            AND a.category.id = (SELECT a2.category.id FROM Auction a2 WHERE a2.id = :auctionId)
+            ORDER BY a.bidCount DESC, a.id DESC
+            """)
+    List<Auction> findSimilarByCategory(@Param("auctionId") Long auctionId, Pageable pageable);
 }

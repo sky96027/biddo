@@ -227,6 +227,15 @@ Presigned URL 방식으로 클라이언트가 S3에 직접 업로드합니다. �
 | Response | `[ { auctionId, title, status, currentPrice, bidCount, thumbnailUrl, endTime } ]` |
 | 비고 | Redis Sorted Set 기반 입찰 수 인기순 정렬. ACTIVE 경매만 반환. |
 
+## `GET /api/v1/auctions/{auctionId}/similar` — 유사 상품 추천
+
+| 구분 | 내용 |
+| --- | --- |
+| 인증 | 불필요 |
+| Query | `?size=6` (최대 6) |
+| Response | `[ { auctionId, title, status, currentPrice, bidCount, thumbnailUrl, endTime, sellerNickname, categoryName } ]` |
+| 비고 | ES More Like This(title/description) 기반 유사도 분석. ES 장애 시 같은 카테고리 인기순 DB fallback. ACTIVE 경매만 반환. |
+
 ## `GET /api/v1/auctions/{auctionId}` — 경매 상세 조회
 
 | 구분 | 내용 |
