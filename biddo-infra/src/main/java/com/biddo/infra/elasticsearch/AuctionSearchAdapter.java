@@ -47,6 +47,37 @@ public class AuctionSearchAdapter implements AuctionSearchPort {
         return auctionSearchFallback.search(condition);
     }
 
+    @Override
+    @CircuitBreaker(name = "elasticsearch", fallbackMethod = "findSimilarFallback")
+    public List<AuctionSearchResult> findSimilar(Long auctionId, int size) {
+        NativeQuery query = NativeQuery.builder()
+                .withQuery(q -> q.bool(b -> b
+                        .must(m -> m.moreLikeThis(mlt -> mlt
+                                .fields("title", "description")
+                                .like(l -> l.document(d -> d.index("auctions").id(String.valueOf(auctionId))))
+                                .minTermFreq(1)
+                                .minDocFreq(1)
+                                .maxQueryTerms(12)
+                        ))
+                        .filter(f -> f.term(t -> t.field("status").value("ACTIVE")))
+                ))
+                .withPageable(PageRequest.of(0, size))
+                .build();
+
+        SearchHits<AuctionDocument> searchHits = elasticsearchOperations.search(query, AuctionDocument.class);
+
+        return searchHits.getSearchHits().stream()
+                .map(SearchHit::getContent)
+                .filter(doc -> !doc.getId().equals(auctionId))
+                .map(this::toSearchResult)
+                .toList();
+    }
+
+    private List<AuctionSearchResult> findSimilarFallback(Long auctionId, int size, Throwable t) {
+        log.warn("Elasticsearch 장애 발생, 유사 상품 DB fallback 실행: {}", t.getMessage());
+        return auctionSearchFallback.findSimilarByCategory(auctionId, size);
+    }
+
     private NativeQuery buildQuery(AuctionSearchCondition condition) {
         BoolQuery.Builder boolQuery = QueryBuilders.bool();
 

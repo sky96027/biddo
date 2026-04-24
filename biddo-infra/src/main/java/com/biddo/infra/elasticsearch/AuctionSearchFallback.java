@@ -46,6 +46,14 @@ public class AuctionSearchFallback {
                 .toList();
     }
 
+    public List<AuctionSearchResult> findSimilarByCategory(Long auctionId, int size) {
+        PageRequest pageRequest = PageRequest.of(0, size + 1);
+        List<Auction> auctions = auctionJpaRepository.findSimilarByCategory(auctionId, pageRequest);
+        return auctions.stream()
+                .map(this::toSearchResult)
+                .toList();
+    }
+
     private AuctionSearchResult toSearchResult(Auction auction) {
         String thumbnail = auction.getImages().isEmpty()
                 ? null
