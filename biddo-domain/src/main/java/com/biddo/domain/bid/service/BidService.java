@@ -9,6 +9,7 @@ import com.biddo.domain.bid.exception.BidErrorCode;
 import com.biddo.domain.bid.model.AutoBid;
 import com.biddo.domain.bid.model.Bid;
 import com.biddo.domain.bid.model.BidType;
+import com.biddo.domain.bid.port.out.AuctionLockPort;
 import com.biddo.domain.bid.port.out.AutoBidRepository;
 import com.biddo.domain.bid.port.out.BidEventPublisher;
 import com.biddo.domain.bid.port.out.BidRepository;
@@ -20,6 +21,7 @@ import com.biddo.domain.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
@@ -40,9 +42,37 @@ public class BidService {
     private final BidEventPublisher bidEventPublisher;
     private final AuctionEventPublisher auctionEventPublisher;
     private final ChatService chatService;
+    private final AuctionLockPort auctionLockPort;
+    private final TransactionTemplate transactionTemplate;
 
-    @Transactional
     public Bid placeBid(Long auctionId, Long bidderId, Long bidAmount) {
+        Bid[] result = new Bid[1];
+        auctionLockPort.executeWithLock(auctionId, () ->
+                result[0] = transactionTemplate.execute(status ->
+                        placeBidInternal(auctionId, bidderId, bidAmount))
+        );
+        return result[0];
+    }
+
+    public Bid buyNow(Long auctionId, Long bidderId) {
+        Bid[] result = new Bid[1];
+        auctionLockPort.executeWithLock(auctionId, () ->
+                result[0] = transactionTemplate.execute(status ->
+                        buyNowInternal(auctionId, bidderId))
+        );
+        return result[0];
+    }
+
+    public AutoBid setAutoBid(Long auctionId, Long bidderId, Long maxAmount) {
+        AutoBid[] result = new AutoBid[1];
+        auctionLockPort.executeWithLock(auctionId, () ->
+                result[0] = transactionTemplate.execute(status ->
+                        setAutoBidInternal(auctionId, bidderId, maxAmount))
+        );
+        return result[0];
+    }
+
+    private Bid placeBidInternal(Long auctionId, Long bidderId, Long bidAmount) {
         Auction auction = getAuction(auctionId);
         Member bidder = getMember(bidderId);
 
@@ -59,8 +89,7 @@ public class BidService {
         return bid;
     }
 
-    @Transactional
-    public Bid buyNow(Long auctionId, Long bidderId) {
+    private Bid buyNowInternal(Long auctionId, Long bidderId) {
         Auction auction = getAuction(auctionId);
         Member bidder = getMember(bidderId);
 
@@ -81,8 +110,7 @@ public class BidService {
         return bid;
     }
 
-    @Transactional
-    public AutoBid setAutoBid(Long auctionId, Long bidderId, Long maxAmount) {
+    private AutoBid setAutoBidInternal(Long auctionId, Long bidderId, Long maxAmount) {
         Auction auction = getAuction(auctionId);
         Member bidder = getMember(bidderId);
 
