@@ -87,4 +87,10 @@ public interface AuctionJpaRepository extends JpaRepository<Auction, Long> {
             ORDER BY a.bidCount DESC, a.id DESC
             """)
     List<Auction> findSimilarByCategory(@Param("auctionId") Long auctionId, Pageable pageable);
+
+    @Query("SELECT a FROM Auction a WHERE a.status = 'PENDING' AND a.startTime <= :now")
+    List<Auction> findPendingAuctionsToActivate(@Param("now") LocalDateTime now);
+
+    @Query("SELECT a FROM Auction a WHERE a.status = 'ACTIVE' AND a.endTime <= :now")
+    List<Auction> findActiveAuctionsToEnd(@Param("now") LocalDateTime now);
 }

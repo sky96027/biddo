@@ -11,4 +11,8 @@ public interface AuctionEventPublisher {
     void publishAuctionCancelled(Auction auction);
 
     void publishAuctionSold(Auction auction);
+
+    void publishAuctionActivated(Auction auction);
+
+    void publishAuctionEnded(Auction auction);
 }

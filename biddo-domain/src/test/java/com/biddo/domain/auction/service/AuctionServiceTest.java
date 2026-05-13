@@ -6,7 +6,10 @@ import com.biddo.domain.auction.model.Auction;
 import com.biddo.domain.auction.model.AuctionStatus;
 import com.biddo.domain.auction.model.ItemCondition;
 import com.biddo.domain.auction.port.out.AuctionEventPublisher;
+import com.biddo.domain.auction.port.out.AuctionLifecyclePort;
 import com.biddo.domain.auction.port.out.AuctionRepository;
+import com.biddo.domain.bid.port.out.AutoBidRepository;
+import com.biddo.domain.chat.service.ChatService;
 import com.biddo.domain.category.entity.Category;
 import com.biddo.domain.category.repository.CategoryRepository;
 import com.biddo.domain.common.exception.BusinessException;
@@ -48,6 +51,15 @@ class AuctionServiceTest {
 
     @Mock
     private AuctionEventPublisher auctionEventPublisher;
+
+    @Mock
+    private AuctionLifecyclePort auctionLifecyclePort;
+
+    @Mock
+    private AutoBidRepository autoBidRepository;
+
+    @Mock
+    private ChatService chatService;
 
     private Member seller;
     private Category category;

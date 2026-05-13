@@ -4,6 +4,7 @@ import com.biddo.domain.auction.model.Auction;
 import com.biddo.domain.auction.model.AuctionStatus;
 import com.biddo.domain.auction.model.ItemCondition;
 import com.biddo.domain.auction.port.out.AuctionEventPublisher;
+import com.biddo.domain.auction.port.out.AuctionLifecyclePort;
 import com.biddo.domain.auction.port.out.AuctionRepository;
 import com.biddo.domain.bid.exception.BidErrorCode;
 import com.biddo.domain.bid.model.AutoBid;
@@ -64,6 +65,9 @@ class BidServiceTest {
 
     @Mock
     private AuctionEventPublisher auctionEventPublisher;
+
+    @Mock
+    private AuctionLifecyclePort auctionLifecyclePort;
 
     @Mock
     private ChatService chatService;

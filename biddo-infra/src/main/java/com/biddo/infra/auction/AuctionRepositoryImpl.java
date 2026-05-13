@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -71,5 +72,15 @@ public class AuctionRepositoryImpl implements AuctionRepository {
             return List.of();
         }
         return auctionJpaRepository.findByIdInAndActive(ids);
+    }
+
+    @Override
+    public List<Auction> findPendingAuctionsToActivate(LocalDateTime now) {
+        return auctionJpaRepository.findPendingAuctionsToActivate(now);
+    }
+
+    @Override
+    public List<Auction> findActiveAuctionsToEnd(LocalDateTime now) {
+        return auctionJpaRepository.findActiveAuctionsToEnd(now);
     }
 }

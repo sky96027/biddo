@@ -4,6 +4,7 @@ import com.biddo.domain.auction.exception.AuctionNotFoundException;
 import com.biddo.domain.auction.model.Auction;
 import com.biddo.domain.auction.model.AuctionStatus;
 import com.biddo.domain.auction.port.out.AuctionEventPublisher;
+import com.biddo.domain.auction.port.out.AuctionLifecyclePort;
 import com.biddo.domain.auction.port.out.AuctionRepository;
 import com.biddo.domain.bid.exception.BidErrorCode;
 import com.biddo.domain.bid.model.AutoBid;
@@ -41,6 +42,7 @@ public class BidService {
     private final MemberRepository memberRepository;
     private final BidEventPublisher bidEventPublisher;
     private final AuctionEventPublisher auctionEventPublisher;
+    private final AuctionLifecyclePort auctionLifecyclePort;
     private final ChatService chatService;
     private final AuctionLockPort auctionLockPort;
     private final TransactionTemplate transactionTemplate;
@@ -103,6 +105,7 @@ public class BidService {
         Bid bid = createBid(auction, bidder, auction.getBuyNowPrice(), BidType.BUY_NOW);
         auction.sell(bidder);
         autoBidRepository.deactivateAllByAuctionId(auctionId);
+        auctionLifecyclePort.cancelSchedule(auctionId);
         chatService.createRoom(auction);
         bidEventPublisher.publishBidPlaced(bid);
         auctionEventPublisher.publishAuctionSold(auction);
@@ -226,7 +229,9 @@ public class BidService {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime snipingThreshold = auction.getEndTime().minusMinutes(SNIPING_MINUTES);
         if (now.isAfter(snipingThreshold)) {
-            auction.extendEndTime(now.plusMinutes(SNIPING_MINUTES));
+            LocalDateTime newEndTime = now.plusMinutes(SNIPING_MINUTES);
+            auction.extendEndTime(newEndTime);
+            auctionLifecyclePort.scheduleEnd(auction.getId(), newEndTime);
         }
     }
 

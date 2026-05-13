@@ -37,6 +37,16 @@ public class KafkaAuctionEventPublisher implements AuctionEventPublisher {
         publish(AuctionEvent.AUCTION_SOLD, auction);
     }
 
+    @Override
+    public void publishAuctionActivated(Auction auction) {
+        publish(AuctionEvent.AUCTION_ACTIVATED, auction);
+    }
+
+    @Override
+    public void publishAuctionEnded(Auction auction) {
+        publish(AuctionEvent.AUCTION_ENDED, auction);
+    }
+
     private void publish(String eventType, Auction auction) {
         AuctionEvent event = AuctionEvent.builder()
                 .eventType(eventType)
