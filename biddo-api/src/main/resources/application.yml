@@ -59,6 +59,6 @@ resilience4j:
         minimum-number-of-calls: 5
 
 jwt:
-  secret: ${JWT_SECRET}
+  secret: ${JWT_SECRET:dGhpcyBpcyBhIHZlcnkgbG9uZyBzZWNyZXQga2V5IGZvciBiaWRkbyBqd3QgdG9rZW4gZ2VuZXJhdGlvbg==}
   access-token-expiration: 1800000
   refresh-token-expiration: 1209600000
