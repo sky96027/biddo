@@ -48,10 +48,10 @@
 | DNS | Route 53 | 도메인 관리 및 라우팅 |
 | Storage | S3 | 상품 이미지 저장소 |
 | CDN | CloudFront | 이미지 및 정적 리소스 캐싱/배포 |
-| Database | RDS (PostgreSQL) | 관리형 PostgreSQL 인스턴스 |
-| Cache | ElastiCache (Redis) | 관리형 Redis 클러스터 |
-| Messaging | Amazon MSK (Managed Kafka) | 관리형 Kafka 클러스터 |
-| Search | Amazon OpenSearch Service | 관리형 Elasticsearch (검색 엔진) |
+| Database | EC2 (PostgreSQL) | EC2에 직접 설치 |
+| Cache | EC2 (Redis) | EC2에 직접 설치 |
+| Messaging | EC2 (Kafka) | EC2에 직접 설치 |
+| Search | EC2 (Elasticsearch) | EC2에 직접 설치 |
 | Image Processing | Lambda@Edge | 이미지 리사이징/썸네일 생성 (CloudFront 연동) |
 | Container Registry | ECR | Docker 이미지 저장소 (선택) |
 | Secret Management | Secrets Manager | DB 비밀번호, API 키 등 보안 관리 |
@@ -98,14 +98,14 @@ flowchart TB
     end
 
     subgraph DataStore["Data Store"]
-        RDS["RDS(PostgreSQL)"]
-        Redis["ElastiCache(Redis)"]
+        RDS["EC2(PostgreSQL)"]
+        Redis["EC2(Redis)"]
         S3["S3(이미지 저장)"]
     end
 
     subgraph Messaging["Messaging & Search"]
-        MSK["Amazon MSK(Kafka)"]
-        OpenSearch["OpenSearch(Elasticsearch)"]
+        MSK["EC2(Kafka)"]
+        OpenSearch["EC2(Elasticsearch)"]
     end
 
     subgraph Monitoring["Monitoring"]
@@ -149,9 +149,8 @@ flowchart TB
 # 비용 최적화 참고
 
 - EC2 t2.micro / t3.micro는 프리 티어 대상이며, 개발/소규모 운영에 적합합니다.
-- MSK는 비용이 높으므로, 초기에는 EC2 위에 Kafka를 직접 설치하는 방안도 고려할 수 있습니다.
-- ElastiCache 역시 초기에는 EC2 내 Redis 직접 설치로 비용 절감 가능합니다.
-- RDS 프리 티어 (db.t3.micro)를 활용하면 12개월 무료 사용 가능합니다.
+- PostgreSQL, Redis, Kafka, Elasticsearch는 EC2에 직접 설치하여 비용을 절감합니다.
+- Docker Compose로 로컬/개발 환경 구성, EC2에서는 직접 설치 또는 Docker로 운영합니다.
 
 ---
 

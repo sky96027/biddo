@@ -5,10 +5,10 @@
 ## 기술 스택
 
 - **Backend**: Java 17+, Spring Boot 3.x, Spring Data JPA (Hibernate), Gradle
-- **DB**: PostgreSQL (RDS), Redis (ElastiCache)
-- **Messaging**: Apache Kafka (Amazon MSK)
+- **DB**: PostgreSQL (EC2), Redis (EC2)
+- **Messaging**: Apache Kafka (EC2)
 - **Real-time**: WebSocket (입찰/채팅 양방향), SSE (알림/카운트다운 단방향)
-- **Search**: Elasticsearch (Amazon OpenSearch)
+- **Search**: Elasticsearch (EC2)
 - **Storage**: S3 + CloudFront + Lambda@Edge (이미지 리사이징)
 - **Infra**: EC2 x2 + ALB, Route 53, GitHub Actions CI/CD, Docker
 - **Monitoring**: Prometheus + Grafana + CloudWatch
