@@ -7,10 +7,31 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 public interface AuctionJpaRepository extends JpaRepository<Auction, Long> {
+
+    @Query("""
+            SELECT a FROM Auction a
+            JOIN FETCH a.seller JOIN FETCH a.category LEFT JOIN FETCH a.images
+            WHERE a.status = 'ACTIVE'
+            AND (:keyword IS NULL OR a.title LIKE CONCAT('%', :keyword, '%'))
+            AND (:categoryId IS NULL OR a.category.id = :categoryId)
+            AND (:minPrice IS NULL OR a.currentPrice >= :minPrice)
+            AND (:maxPrice IS NULL OR a.currentPrice <= :maxPrice)
+            AND (:endBefore IS NULL OR a.endTime <= :endBefore)
+            AND (:cursor IS NULL OR a.id < :cursor)
+            ORDER BY a.id DESC
+            """)
+    List<Auction> searchAuctions(@Param("keyword") String keyword,
+                                  @Param("categoryId") Long categoryId,
+                                  @Param("minPrice") Long minPrice,
+                                  @Param("maxPrice") Long maxPrice,
+                                  @Param("endBefore") LocalDateTime endBefore,
+                                  @Param("cursor") Long cursor,
+                                  Pageable pageable);
 
     @Query("SELECT a FROM Auction a JOIN FETCH a.seller JOIN FETCH a.category WHERE a.id = :id")
     Optional<Auction> findByIdWithSeller(@Param("id") Long id);
@@ -52,4 +73,24 @@ public interface AuctionJpaRepository extends JpaRepository<Auction, Long> {
     List<Auction> findActiveAuctionsByBidderIdWithCursor(@Param("bidderId") Long bidderId,
                                                          @Param("cursor") Long cursor,
                                                          Pageable pageable);
+
+    @Query("SELECT COUNT(a) FROM Auction a WHERE a.seller.id = :sellerId AND a.status IN ('ENDED', 'SOLD') AND a.winner IS NOT NULL")
+    long countCompletedBySellerId(@Param("sellerId") Long sellerId);
+
+    @Query("SELECT a FROM Auction a JOIN FETCH a.seller JOIN FETCH a.category LEFT JOIN FETCH a.images WHERE a.id IN :ids AND a.status = 'ACTIVE'")
+    List<Auction> findByIdInAndActive(@Param("ids") List<Long> ids);
+
+    @Query("""
+            SELECT a FROM Auction a JOIN FETCH a.seller JOIN FETCH a.category LEFT JOIN FETCH a.images
+            WHERE a.status = 'ACTIVE' AND a.id <> :auctionId
+            AND a.category.id = (SELECT a2.category.id FROM Auction a2 WHERE a2.id = :auctionId)
+            ORDER BY a.bidCount DESC, a.id DESC
+            """)
+    List<Auction> findSimilarByCategory(@Param("auctionId") Long auctionId, Pageable pageable);
+
+    @Query("SELECT a FROM Auction a WHERE a.status = 'PENDING' AND a.startTime <= :now")
+    List<Auction> findPendingAuctionsToActivate(@Param("now") LocalDateTime now);
+
+    @Query("SELECT a FROM Auction a WHERE a.status = 'ACTIVE' AND a.endTime <= :now")
+    List<Auction> findActiveAuctionsToEnd(@Param("now") LocalDateTime now);
 }

@@ -4,11 +4,13 @@ import com.biddo.domain.auction.exception.AuctionNotFoundException;
 import com.biddo.domain.auction.model.Auction;
 import com.biddo.domain.auction.model.AuctionStatus;
 import com.biddo.domain.auction.port.out.AuctionEventPublisher;
+import com.biddo.domain.auction.port.out.AuctionLifecyclePort;
 import com.biddo.domain.auction.port.out.AuctionRepository;
 import com.biddo.domain.bid.exception.BidErrorCode;
 import com.biddo.domain.bid.model.AutoBid;
 import com.biddo.domain.bid.model.Bid;
 import com.biddo.domain.bid.model.BidType;
+import com.biddo.domain.bid.port.out.AuctionLockPort;
 import com.biddo.domain.bid.port.out.AutoBidRepository;
 import com.biddo.domain.bid.port.out.BidEventPublisher;
 import com.biddo.domain.bid.port.out.BidRepository;
@@ -20,6 +22,7 @@ import com.biddo.domain.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
@@ -39,10 +42,39 @@ public class BidService {
     private final MemberRepository memberRepository;
     private final BidEventPublisher bidEventPublisher;
     private final AuctionEventPublisher auctionEventPublisher;
+    private final AuctionLifecyclePort auctionLifecyclePort;
     private final ChatService chatService;
+    private final AuctionLockPort auctionLockPort;
+    private final TransactionTemplate transactionTemplate;
 
-    @Transactional
     public Bid placeBid(Long auctionId, Long bidderId, Long bidAmount) {
+        Bid[] result = new Bid[1];
+        auctionLockPort.executeWithLock(auctionId, () ->
+                result[0] = transactionTemplate.execute(status ->
+                        placeBidInternal(auctionId, bidderId, bidAmount))
+        );
+        return result[0];
+    }
+
+    public Bid buyNow(Long auctionId, Long bidderId) {
+        Bid[] result = new Bid[1];
+        auctionLockPort.executeWithLock(auctionId, () ->
+                result[0] = transactionTemplate.execute(status ->
+                        buyNowInternal(auctionId, bidderId))
+        );
+        return result[0];
+    }
+
+    public AutoBid setAutoBid(Long auctionId, Long bidderId, Long maxAmount) {
+        AutoBid[] result = new AutoBid[1];
+        auctionLockPort.executeWithLock(auctionId, () ->
+                result[0] = transactionTemplate.execute(status ->
+                        setAutoBidInternal(auctionId, bidderId, maxAmount))
+        );
+        return result[0];
+    }
+
+    private Bid placeBidInternal(Long auctionId, Long bidderId, Long bidAmount) {
         Auction auction = getAuction(auctionId);
         Member bidder = getMember(bidderId);
 
@@ -59,8 +91,7 @@ public class BidService {
         return bid;
     }
 
-    @Transactional
-    public Bid buyNow(Long auctionId, Long bidderId) {
+    private Bid buyNowInternal(Long auctionId, Long bidderId) {
         Auction auction = getAuction(auctionId);
         Member bidder = getMember(bidderId);
 
@@ -74,6 +105,7 @@ public class BidService {
         Bid bid = createBid(auction, bidder, auction.getBuyNowPrice(), BidType.BUY_NOW);
         auction.sell(bidder);
         autoBidRepository.deactivateAllByAuctionId(auctionId);
+        auctionLifecyclePort.cancelSchedule(auctionId);
         chatService.createRoom(auction);
         bidEventPublisher.publishBidPlaced(bid);
         auctionEventPublisher.publishAuctionSold(auction);
@@ -81,8 +113,7 @@ public class BidService {
         return bid;
     }
 
-    @Transactional
-    public AutoBid setAutoBid(Long auctionId, Long bidderId, Long maxAmount) {
+    private AutoBid setAutoBidInternal(Long auctionId, Long bidderId, Long maxAmount) {
         Auction auction = getAuction(auctionId);
         Member bidder = getMember(bidderId);
 
@@ -198,7 +229,9 @@ public class BidService {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime snipingThreshold = auction.getEndTime().minusMinutes(SNIPING_MINUTES);
         if (now.isAfter(snipingThreshold)) {
-            auction.extendEndTime(now.plusMinutes(SNIPING_MINUTES));
+            LocalDateTime newEndTime = now.plusMinutes(SNIPING_MINUTES);
+            auction.extendEndTime(newEndTime);
+            auctionLifecyclePort.scheduleEnd(auction.getId(), newEndTime);
         }
     }
 

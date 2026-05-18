@@ -4,11 +4,13 @@ import com.biddo.domain.auction.model.Auction;
 import com.biddo.domain.auction.model.AuctionStatus;
 import com.biddo.domain.auction.model.ItemCondition;
 import com.biddo.domain.auction.port.out.AuctionEventPublisher;
+import com.biddo.domain.auction.port.out.AuctionLifecyclePort;
 import com.biddo.domain.auction.port.out.AuctionRepository;
 import com.biddo.domain.bid.exception.BidErrorCode;
 import com.biddo.domain.bid.model.AutoBid;
 import com.biddo.domain.bid.model.Bid;
 import com.biddo.domain.bid.model.BidType;
+import com.biddo.domain.bid.port.out.AuctionLockPort;
 import com.biddo.domain.bid.port.out.AutoBidRepository;
 import com.biddo.domain.bid.port.out.BidEventPublisher;
 import com.biddo.domain.bid.port.out.BidRepository;
@@ -25,6 +27,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -63,7 +67,16 @@ class BidServiceTest {
     private AuctionEventPublisher auctionEventPublisher;
 
     @Mock
+    private AuctionLifecyclePort auctionLifecyclePort;
+
+    @Mock
     private ChatService chatService;
+
+    @Mock
+    private AuctionLockPort auctionLockPort;
+
+    @Mock
+    private TransactionTemplate transactionTemplate;
 
     private Member seller;
     private Member bidder;
@@ -73,6 +86,17 @@ class BidServiceTest {
 
     @BeforeEach
     void setUp() {
+        lenient().doAnswer(inv -> {
+            Runnable action = inv.getArgument(1);
+            action.run();
+            return null;
+        }).when(auctionLockPort).executeWithLock(anyLong(), any(Runnable.class));
+
+        lenient().when(transactionTemplate.execute(any())).thenAnswer(inv -> {
+            TransactionCallback<?> callback = inv.getArgument(0);
+            return callback.doInTransaction(null);
+        });
+
         seller = Member.builder()
                 .email("seller@test.com")
                 .password("encoded")

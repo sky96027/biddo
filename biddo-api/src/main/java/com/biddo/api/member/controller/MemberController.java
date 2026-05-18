@@ -5,12 +5,14 @@ import com.biddo.api.common.response.ApiResponse;
 import com.biddo.api.common.response.CursorResponse;
 import com.biddo.api.common.security.CustomUserDetails;
 import com.biddo.api.member.dto.request.ProfileUpdateRequest;
+import com.biddo.api.member.dto.response.MemberProfileResponse;
 import com.biddo.api.member.dto.response.MemberResponse;
 import com.biddo.domain.auction.model.Auction;
 import com.biddo.domain.auction.model.AuctionStatus;
 import com.biddo.domain.auction.port.out.AuctionRepository;
 import com.biddo.domain.member.entity.Member;
 import com.biddo.domain.member.service.MemberService;
+import com.biddo.domain.review.service.ReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +30,16 @@ public class MemberController {
 
     private final MemberService memberService;
     private final AuctionRepository auctionRepository;
+    private final ReviewService reviewService;
+
+    @GetMapping("/{memberId}")
+    public ApiResponse<MemberProfileResponse> getMemberProfile(@PathVariable Long memberId) {
+        Member member = memberService.findById(memberId);
+        double avgRating = reviewService.getAverageRating(memberId);
+        long reviewCount = reviewService.getReviewCount(memberId);
+        long completedTradeCount = auctionRepository.countCompletedBySellerId(memberId);
+        return ApiResponse.success(MemberProfileResponse.of(member, avgRating, reviewCount, completedTradeCount));
+    }
 
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<MemberResponse>> getMyProfile(

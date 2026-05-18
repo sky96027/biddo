@@ -3,6 +3,7 @@ package com.biddo.domain.auction.port.out;
 import com.biddo.domain.auction.model.Auction;
 import com.biddo.domain.auction.model.AuctionStatus;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,4 +20,12 @@ public interface AuctionRepository {
     List<Auction> findByWinnerId(Long winnerId, Long cursor, int size);
 
     List<Auction> findActiveAuctionsByBidderId(Long bidderId, Long cursor, int size);
+
+    long countCompletedBySellerId(Long sellerId);
+
+    List<Auction> findByIdIn(List<Long> ids);
+
+    List<Auction> findPendingAuctionsToActivate(LocalDateTime now);
+
+    List<Auction> findActiveAuctionsToEnd(LocalDateTime now);
 }

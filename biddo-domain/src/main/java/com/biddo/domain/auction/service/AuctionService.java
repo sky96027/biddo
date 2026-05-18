@@ -7,7 +7,10 @@ import com.biddo.domain.auction.model.AuctionImage;
 import com.biddo.domain.auction.model.AuctionStatus;
 import com.biddo.domain.auction.model.ItemCondition;
 import com.biddo.domain.auction.port.out.AuctionEventPublisher;
+import com.biddo.domain.auction.port.out.AuctionLifecyclePort;
 import com.biddo.domain.auction.port.out.AuctionRepository;
+import com.biddo.domain.bid.port.out.AutoBidRepository;
+import com.biddo.domain.chat.service.ChatService;
 import com.biddo.domain.category.entity.Category;
 import com.biddo.domain.category.repository.CategoryRepository;
 import com.biddo.domain.common.exception.BusinessException;
@@ -32,6 +35,9 @@ public class AuctionService {
     private final MemberRepository memberRepository;
     private final CategoryRepository categoryRepository;
     private final AuctionEventPublisher auctionEventPublisher;
+    private final AuctionLifecyclePort auctionLifecyclePort;
+    private final AutoBidRepository autoBidRepository;
+    private final ChatService chatService;
 
     @Transactional
     public Auction create(Long sellerId, Long categoryId, String title, String description,
@@ -73,6 +79,7 @@ public class AuctionService {
         }
 
         auctionEventPublisher.publishAuctionCreated(auction);
+        auctionLifecyclePort.scheduleActivation(auction.getId(), auction.getStartTime());
         return auction;
     }
 
@@ -112,6 +119,7 @@ public class AuctionService {
         validateSeller(auction, memberId);
         validatePending(auction);
         auction.cancel();
+        auctionLifecyclePort.cancelSchedule(auction.getId());
         auctionEventPublisher.publishAuctionCancelled(auction);
     }
 
@@ -122,7 +130,37 @@ public class AuctionService {
             throw new BusinessException(AuctionErrorCode.AUCTION_ALREADY_CANCELLED);
         }
         auction.cancel();
+        auctionLifecyclePort.cancelSchedule(auction.getId());
         auctionEventPublisher.publishAuctionCancelled(auction);
+    }
+
+    @Transactional
+    public void activateAuction(Long auctionId) {
+        Auction auction = findAuctionById(auctionId);
+        if (!auction.isPending()) {
+            return;
+        }
+        auction.activate();
+        auctionRepository.save(auction);
+        auctionLifecyclePort.scheduleEnd(auction.getId(), auction.getEndTime());
+        auctionEventPublisher.publishAuctionActivated(auction);
+    }
+
+    @Transactional
+    public void endAuction(Long auctionId) {
+        Auction auction = findAuctionById(auctionId);
+        if (!auction.isActive()) {
+            return;
+        }
+        auction.end();
+        autoBidRepository.deactivateAllByAuctionId(auctionId);
+        auctionRepository.save(auction);
+
+        if (auction.getWinner() != null) {
+            chatService.createRoom(auction);
+        }
+
+        auctionEventPublisher.publishAuctionEnded(auction);
     }
 
     public Auction findById(Long auctionId) {

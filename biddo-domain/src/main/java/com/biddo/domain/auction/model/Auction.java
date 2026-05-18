@@ -149,6 +149,17 @@ public class Auction extends BaseTimeEntity {
         this.currentPrice = this.buyNowPrice;
     }
 
+    public void activate() {
+        if (this.status != AuctionStatus.PENDING) {
+            throw new BusinessException(AuctionErrorCode.AUCTION_NOT_PENDING);
+        }
+        this.status = AuctionStatus.ACTIVE;
+    }
+
+    public void end() {
+        this.status = AuctionStatus.ENDED;
+    }
+
     public void extendEndTime(LocalDateTime newEndTime) {
         this.endTime = newEndTime;
     }
