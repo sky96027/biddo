@@ -67,6 +67,11 @@ public class AuctionRepositoryImpl implements AuctionRepository {
     }
 
     @Override
+    public long countTotalEndedBySellerId(Long sellerId) {
+        return auctionJpaRepository.countTotalEndedBySellerId(sellerId);
+    }
+
+    @Override
     public List<Auction> findByIdIn(List<Long> ids) {
         if (ids == null || ids.isEmpty()) {
             return List.of();

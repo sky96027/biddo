@@ -14,8 +14,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -47,9 +45,7 @@ public class ReviewService {
                 .content(content)
                 .build();
 
-        Review saved = reviewRepository.save(review);
-        updateTrustScore(auction.getSeller());
-        return saved;
+        return reviewRepository.save(review);
     }
 
     @Transactional
@@ -58,7 +54,6 @@ public class ReviewService {
         validateReviewer(review, memberId);
         validateReviewPeriod(review.getAuction());
         review.update(rating, content);
-        updateTrustScore(review.getReviewee());
         return review;
     }
 
@@ -67,9 +62,7 @@ public class ReviewService {
         Review review = findReviewById(reviewId);
         validateReviewer(review, memberId);
         validateReviewPeriod(review.getAuction());
-        Member reviewee = review.getReviewee();
         reviewRepository.delete(review);
-        updateTrustScore(reviewee);
     }
 
     public List<Review> findByRevieweeId(Long revieweeId, Long cursor, int size) {
@@ -123,9 +116,4 @@ public class ReviewService {
         }
     }
 
-    private void updateTrustScore(Member reviewee) {
-        Double avg = reviewRepository.findAverageRatingByRevieweeId(reviewee.getId()).orElse(0.0);
-        BigDecimal score = BigDecimal.valueOf(avg).setScale(1, RoundingMode.HALF_UP);
-        reviewee.updateTrustScore(score);
-    }
 }
