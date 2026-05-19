@@ -23,6 +23,8 @@ public interface AuctionRepository {
 
     long countCompletedBySellerId(Long sellerId);
 
+    long countTotalEndedBySellerId(Long sellerId);
+
     List<Auction> findByIdIn(List<Long> ids);
 
     List<Auction> findPendingAuctionsToActivate(LocalDateTime now);
