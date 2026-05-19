@@ -18,4 +18,6 @@ public interface BidRepository {
     void clearWinningBid(Long auctionId);
 
     List<Long> findDistinctBidderIdsByAuctionId(Long auctionId);
+
+    List<Long> findTopCategoryIdsByBidderId(Long bidderId, int limit);
 }

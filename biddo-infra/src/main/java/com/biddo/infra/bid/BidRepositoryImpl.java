@@ -47,4 +47,9 @@ public class BidRepositoryImpl implements BidRepository {
     public List<Long> findDistinctBidderIdsByAuctionId(Long auctionId) {
         return bidJpaRepository.findDistinctBidderIdsByAuctionId(auctionId);
     }
+
+    @Override
+    public List<Long> findTopCategoryIdsByBidderId(Long bidderId, int limit) {
+        return bidJpaRepository.findTopCategoryIdsByBidderId(bidderId, PageRequest.of(0, limit));
+    }
 }
