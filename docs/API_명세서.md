@@ -258,6 +258,22 @@ Presigned URL 방식으로 클라이언트가 S3에 직접 업로드합니다. �
 | 인증 | 불필요 |
 | Response | 계층형 카테고리 트리 |
 
+## `GET /api/v1/categories/recommendations` — 카테고리 추천
+
+| 구분 | 내용 |
+| --- | --- |
+| 인증 | 필요 |
+| Response | `[ { id, name, depth, sortOrder, children } ]` (최대 5개) |
+| 비고 | 입찰 빈도 + 가격 알림 경매 카테고리 기반 개인화 추천. 중복 제거. 이력 없으면 빈 배열 반환. |
+
+## `GET /api/v1/auctions/{auctionId}/countdown` — 카운트다운 SSE
+
+| 구분 | 내용 |
+| --- | --- |
+| 인증 | 불필요 |
+| Response | `text/event-stream` (SSE 스트림) |
+| 비고 | 경매 종료까지 남은 시간을 실시간 스트리밍. 스나이핑 연장 시 자동 반영. |
+
 ---
 
 # 입찰 API (Bid)
@@ -388,7 +404,7 @@ Presigned URL 방식으로 클라이언트가 S3에 직접 업로드합니다. �
 | Query | `?cursor=&size=50` |
 | Response | 페이지네이션 응답 (메시지 목록) |
 
-## `POST /api/v1/upload/presigned-url` — 이미지 업로드 URL 발급
+## `POST /api/v1/upload/presigned-url` — 이미지 업로드 URL 발급 *(미구현)*
 
 | 구분 | 내용 |
 | --- | --- |
@@ -415,12 +431,58 @@ Presigned URL 방식으로 클라이언트가 S3에 직접 업로드합니다. �
 | 인증 | 필요 |
 | Response | 200 OK |
 
-## `GET /api/v1/notifications/subscribe` — SSE 알림 구독
+## `GET /api/v1/notifications/subscribe` — SSE 알림 구독 *(미구현)*
 
 | 구분 | 내용 |
 | --- | --- |
 | 인증 | 필요 |
 | Response | `text/event-stream` (SSE 스트림) |
+| 비고 | Last-Event-ID 기반 재연결 복구 지원 예정 |
+
+---
+
+# 가격 알림 API (Price Alert)
+
+## `POST /api/v1/price-alerts` — 가격 알림 등록
+
+| 구분 | 내용 |
+| --- | --- |
+| 인증 | 필요 |
+| Request Body | `{ auctionId, thresholdPercent }` |
+| Response | `{ id, auctionId, thresholdPercent, basePrice, isActive }` |
+| 에러 | 404 경매 없음 / 409 이미 등록됨 |
+
+## `GET /api/v1/price-alerts` — 내 가격 알림 목록
+
+| 구분 | 내용 |
+| --- | --- |
+| 인증 | 필요 |
+| Response | `[ { id, auctionId, thresholdPercent, basePrice, isActive } ]` |
+
+## `PUT /api/v1/price-alerts/{alertId}` — 가격 알림 수정
+
+| 구분 | 내용 |
+| --- | --- |
+| 인증 | 필요 (등록자 본인만) |
+| Request Body | `{ thresholdPercent }` |
+| Response | `{ id, auctionId, thresholdPercent, basePrice, isActive }` |
+| 에러 | 404 알림 없음 / 403 소유자 아님 |
+
+## `PATCH /api/v1/price-alerts/{alertId}/toggle` — 활성/비활성 토글
+
+| 구분 | 내용 |
+| --- | --- |
+| 인증 | 필요 (등록자 본인만) |
+| Response | 200 OK |
+| 에러 | 404 알림 없음 / 403 소유자 아님 |
+
+## `DELETE /api/v1/price-alerts/{alertId}` — 가격 알림 삭제
+
+| 구분 | 내용 |
+| --- | --- |
+| 인증 | 필요 (등록자 본인만) |
+| Response | 204 No Content |
+| 에러 | 404 알림 없음 / 403 소유자 아님 |
 
 ---
 

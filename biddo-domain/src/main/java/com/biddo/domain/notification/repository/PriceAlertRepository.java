@@ -18,4 +18,7 @@ public interface PriceAlertRepository extends JpaRepository<PriceAlert, Long> {
     List<PriceAlert> findActiveByAuctionId(@Param("auctionId") Long auctionId);
 
     Optional<PriceAlert> findByMemberIdAndAuctionId(Long memberId, Long auctionId);
+
+    @Query("SELECT pa.auctionId FROM PriceAlert pa WHERE pa.member.id = :memberId AND pa.isActive = true")
+    List<Long> findActiveAuctionIdsByMemberId(@Param("memberId") Long memberId);
 }

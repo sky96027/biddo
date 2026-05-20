@@ -26,4 +26,7 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
 
     @Query("SELECT r FROM Report r JOIN FETCH r.reporter JOIN FETCH r.reported WHERE r.status = :status ORDER BY r.id DESC")
     List<Report> findByStatusFirstPage(@Param("status") ReportStatus status, Pageable pageable);
+
+    @Query("SELECT COUNT(r) FROM Report r WHERE r.reported.id = :memberId AND r.status IN ('RESOLVED')")
+    long countResolvedByReportedId(@Param("memberId") Long memberId);
 }
