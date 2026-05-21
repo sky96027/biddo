@@ -5,6 +5,7 @@ import com.biddo.domain.member.entity.Member;
 import com.biddo.domain.notification.entity.Notification;
 import com.biddo.domain.notification.entity.NotificationType;
 import com.biddo.domain.notification.exception.NotificationErrorCode;
+import com.biddo.domain.notification.port.NotificationPushPort;
 import com.biddo.domain.notification.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -19,6 +20,7 @@ import java.util.List;
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
+    private final NotificationPushPort notificationPushPort;
 
     @Transactional
     public Notification create(Member receiver, Long auctionId, NotificationType type, String message) {
@@ -28,7 +30,9 @@ public class NotificationService {
                 .type(type)
                 .message(message)
                 .build();
-        return notificationRepository.save(notification);
+        Notification saved = notificationRepository.save(notification);
+        notificationPushPort.push(receiver.getId(), saved);
+        return saved;
     }
 
     public List<Notification> findByReceiverId(Long receiverId, Boolean isRead, Long cursor, int size) {
@@ -45,6 +49,10 @@ public class NotificationService {
             return notificationRepository.findByReceiverIdFirstPage(receiverId, pageRequest);
         }
         return notificationRepository.findByReceiverIdWithCursor(receiverId, cursor, pageRequest);
+    }
+
+    public List<Notification> findAfter(Long receiverId, Long lastEventId) {
+        return notificationRepository.findByReceiverIdAfter(receiverId, lastEventId);
     }
 
     @Transactional
