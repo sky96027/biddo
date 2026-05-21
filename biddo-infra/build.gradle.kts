@@ -9,5 +9,6 @@ dependencies {
     implementation("org.springframework.kafka:spring-kafka")
     implementation("io.github.resilience4j:resilience4j-spring-boot3:2.2.0")
     implementation("org.springframework.boot:spring-boot-starter-aop")
+    implementation("software.amazon.awssdk:s3:2.25.60")
     runtimeOnly("org.postgresql:postgresql")
 }

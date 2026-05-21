@@ -404,7 +404,7 @@ Presigned URL 방식으로 클라이언트가 S3에 직접 업로드합니다. �
 | Query | `?cursor=&size=50` |
 | Response | 페이지네이션 응답 (메시지 목록) |
 
-## `POST /api/v1/upload/presigned-url` — 이미지 업로드 URL 발급 *(미구현)*
+## `POST /api/v1/upload/presigned-url` — 이미지 업로드 URL 발급
 
 | 구분 | 내용 |
 | --- | --- |

@@ -44,6 +44,17 @@ spring:
       properties:
         spring.json.trusted.packages: "com.biddo.infra.kafka.event"
 
+cloud:
+  aws:
+    credentials:
+      access-key: ${AWS_ACCESS_KEY:local-access-key}
+      secret-key: ${AWS_SECRET_KEY:local-secret-key}
+    region: ${AWS_REGION:ap-northeast-2}
+    s3:
+      bucket: ${S3_BUCKET:biddo-images}
+    cloudfront:
+      domain: ${CLOUDFRONT_DOMAIN:}
+
 server:
   port: 9090
 
