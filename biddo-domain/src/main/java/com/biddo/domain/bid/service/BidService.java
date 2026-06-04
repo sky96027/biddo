@@ -30,7 +30,6 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class BidService {
 
     private static final int MAX_AUTO_BID_CHAIN = 10;
@@ -146,6 +145,7 @@ public class BidService {
         autoBid.deactivate();
     }
 
+    @Transactional(readOnly = true)
     public List<Bid> getBidHistory(Long auctionId, Long cursor, int size) {
         return bidRepository.findBidHistory(auctionId, cursor, size);
     }

@@ -1,0 +1,52 @@
+spring:
+  application:
+    name: biddo-test
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        format_sql: true
+        default_batch_fetch_size: 100
+    open-in-view: false
+
+  sql:
+    init:
+      mode: always
+
+  elasticsearch:
+    uris: http://localhost:19200
+
+  kafka:
+    bootstrap-servers: ${spring.kafka.bootstrap-servers:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+    consumer:
+      group-id: biddo-test
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      auto-offset-reset: earliest
+      properties:
+        spring.json.trusted.packages: "com.biddo.infra.kafka.event"
+
+server:
+  port: 0
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      elasticsearch:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 5s
+        permitted-number-of-calls-in-half-open-state: 3
+        minimum-number-of-calls: 5
+
+jwt:
+  secret: dGhpcyBpcyBhIHZlcnkgbG9uZyBzZWNyZXQga2V5IGZvciBiaWRkbyBqd3QgdG9rZW4gZ2VuZXJhdGlvbg==
+  access-token-expiration: 1800000
+  refresh-token-expiration: 1209600000
