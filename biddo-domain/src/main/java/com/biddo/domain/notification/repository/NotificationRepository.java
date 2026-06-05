@@ -25,4 +25,8 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     List<Notification> findUnreadByReceiverIdWithCursor(@Param("receiverId") Long receiverId,
                                                         @Param("cursor") Long cursor,
                                                         Pageable pageable);
+
+    @Query("SELECT n FROM Notification n WHERE n.receiver.id = :receiverId AND n.id > :lastEventId ORDER BY n.id ASC")
+    List<Notification> findByReceiverIdAfter(@Param("receiverId") Long receiverId,
+                                             @Param("lastEventId") Long lastEventId);
 }

@@ -5,6 +5,7 @@ import com.biddo.domain.member.entity.Member;
 import com.biddo.domain.notification.entity.Notification;
 import com.biddo.domain.notification.entity.NotificationType;
 import com.biddo.domain.notification.exception.NotificationErrorCode;
+import com.biddo.domain.notification.port.NotificationPushPort;
 import com.biddo.domain.notification.repository.NotificationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -33,6 +34,9 @@ class NotificationServiceTest {
 
     @Mock
     private NotificationRepository notificationRepository;
+
+    @Mock
+    private NotificationPushPort notificationPushPort;
 
     private Member receiver;
     private Notification notification;
@@ -67,6 +71,7 @@ class NotificationServiceTest {
         assertThat(result.getType()).isEqualTo(NotificationType.OUTBID);
         assertThat(result.isRead()).isFalse();
         verify(notificationRepository).save(any(Notification.class));
+        verify(notificationPushPort).push(eq(1L), any(Notification.class));
     }
 
     @Test
