@@ -150,3 +150,268 @@ api.version=1.44
 - [testcontainers-java #11235 — Docker Engine 29 incompatibility](https://github.com/testcontainers/testcontainers-java/issues/11235)
 - [testcontainers-java #11212 — Docker 29.0.0 could not find a valid Docker environment](https://github.com/testcontainers/testcontainers-java/issues/11212)
 - [Docker Engine 29 Release Notes — Breaking Changes](https://docs.docker.com/engine/release-notes/29.0/)
+
+---
+
+## ISS-002: 분산 락 내부 트랜잭션 경계 불일치
+
+| 항목 | 내용 |
+|---|---|
+| **발생일** | 2026-05-08 |
+| **상태** | ✅ 해결 |
+| **영향 범위** | 입찰, 즉시 구매, 자동입찰 설정 (BidService) |
+| **관련 커밋** | `b204f34` feat(bid): Redis 분산 락(Redisson) 적용 |
+
+### 개요
+
+동시 입찰 원자성 보장을 위해 Redis 분산 락(Redisson)을 도입했으나, 기존 `@Transactional` 구조와 충돌하여 **락 내부에서 트랜잭션이 의도대로 동작하지 않는 문제**가 발생했다.
+
+### 문제 상황
+
+BidService에 클래스 레벨 `@Transactional(readOnly = true)`가 선언된 상태에서, 분산 락을 적용하면 두 가지 문제가 발생했다.
+
+**1) readOnly 트랜잭션에서 쓰기 시도**
+
+```java
+@Service
+@Transactional(readOnly = true)  // 클래스 레벨
+public class BidService {
+    public Bid placeBid(...) {      // 이 메서드도 readOnly 상속
+        auctionLockPort.executeWithLock(auctionId, () -> {
+            // INSERT/UPDATE 실행 → readOnly 트랜잭션에서 쓰기 시도
+        });
+    }
+}
+```
+
+**2) Spring 프록시 내부 호출 시 @Transactional 무시**
+
+메서드 레벨에 `@Transactional`을 붙여도 해결되지 않았다. 분산 락 콜백 내부에서 `this.placeBidInternal()`을 호출하면 **프록시를 거치지 않으므로** `@Transactional`이 적용되지 않는다.
+
+```java
+public Bid placeBid(...) {
+    auctionLockPort.executeWithLock(auctionId, () -> {
+        this.placeBidInternal(...);  // 프록시 우회 → @Transactional 무시
+    });
+}
+
+@Transactional  // 효과 없음 (프록시를 거치지 않는 내부 호출)
+private Bid placeBidInternal(...) { ... }
+```
+
+### 해결
+
+`TransactionTemplate`을 주입받아 락 내부에서 **프로그래밍 방식으로 트랜잭션 경계를 명시적으로 설정**했다.
+
+```java
+@Service
+@RequiredArgsConstructor
+public class BidService {  // 클래스 레벨 @Transactional 제거
+
+    private final TransactionTemplate transactionTemplate;
+
+    public Bid placeBid(Long auctionId, Long bidderId, Long bidAmount) {
+        Bid[] result = new Bid[1];
+        auctionLockPort.executeWithLock(auctionId, () ->
+                result[0] = transactionTemplate.execute(status ->
+                        placeBidInternal(auctionId, bidderId, bidAmount))
+        );
+        return result[0];
+    }
+}
+```
+
+이 구조에서 실행 순서는 다음과 같다:
+
+```
+1. Redis 분산 락 획득 (3초 대기, 5초 유지)
+2. TransactionTemplate → 새 트랜잭션 시작
+3. 입찰 로직 실행 (검증 → INSERT → UPDATE)
+4. 트랜잭션 커밋
+5. Redis 락 해제
+```
+
+### 왜 클래스 레벨 @Transactional로 해결할 수 없는가
+
+단순히 클래스 레벨에 `@Transactional`(쓰기)을 걸고 읽기 메서드에만 `readOnly = true`를 붙이면 코드는 동작하지만, **락과 트랜잭션의 순서가 뒤집혀** 동시성 보장이 깨진다.
+
+**클래스 레벨 @Transactional 적용 시:**
+
+```
+1. 트랜잭션 시작 (프록시가 placeBid 진입 시 열림)
+2. Redis 락 획득
+3. 비즈니스 로직 (SELECT → INSERT → UPDATE)
+4. Redis 락 해제
+5. 트랜잭션 커밋   ← 락 해제 후 커밋
+```
+
+4~5 사이에 다른 스레드가 락을 획득하면 **아직 커밋되지 않은 데이터**를 읽게 되어, 두 입찰자가 같은 현재가를 기준으로 입찰하는 정합성 문제가 발생한다.
+
+**TransactionTemplate 적용 시 (현재 구현):**
+
+```
+1. Redis 락 획득
+2. 트랜잭션 시작
+3. 비즈니스 로직 (SELECT → INSERT → UPDATE)
+4. 트랜잭션 커밋   ← 락 내부에서 커밋 완료
+5. Redis 락 해제
+```
+
+반드시 `Lock → Tx → Commit → Unlock` 순서여야 하므로, 트랜잭션 경계를 락 내부에서 프로그래밍 방식으로 제어해야 한다.
+
+### 검토한 대안
+
+| 방안 | 가능 여부 | 사유 |
+|---|---|---|
+| 클래스 레벨 `@Transactional` + 메서드별 readOnly | ❌ | 트랜잭션이 락보다 먼저 열려 `Tx → Lock → Unlock → Commit` 순서가 되어 동시성 깨짐 |
+| 메서드 레벨 `@Transactional` override | ❌ | 위와 동일한 순서 문제 + 프록시 내부 호출 시 어노테이션 무시됨 |
+| `AopContext.currentProxy()` 자기 참조 | ❌ | 안티패턴. 코드 복잡도 증가, 테스트 어려움 |
+| 락 로직을 별도 Bean으로 분리 | △ | 가능하나 서비스 분리 시 응집도 저하 |
+| **TransactionTemplate 명시적 트랜잭션** | **✅** | **프록시 무관, Lock → Tx → Commit → Unlock 순서 보장** |
+
+### 결과
+
+- 분산 락 → 트랜잭션 → 비즈니스 로직 순서가 명확하게 보장됨
+- `placeBid`, `buyNow`, `setAutoBid` 3개 메서드에 동일 패턴 적용
+- 읽기 전용 메서드(`getBidHistory`)는 메서드 레벨 `@Transactional(readOnly = true)` 유지
+- 통합 테스트(`ConcurrentBidIntegrationTest`)에서 10명 동시 입찰 정합성 검증 완료
+
+---
+
+## ISS-003: 비즈니스 검증 책임 분산 → 도메인 모델 통합
+
+| 항목 | 내용 |
+|---|---|
+| **발생일** | 2026-04-03 ~ 2026-04-08 |
+| **상태** | ✅ 해결 |
+| **영향 범위** | Auction, Member, Review 엔티티 및 관련 DTO 전체 |
+| **관련 커밋** | `0bdf09b` fix: 비즈니스 규칙 validation 보강, `7c5bba3` refactor: 도메인 모델로 이동 |
+
+### 개요
+
+초기 구현에서 비즈니스 규칙 검증이 **DTO의 Bean Validation 어노테이션에 분산**되어 있었다. 이로 인해 도메인 모델이 자기 불변식을 보호하지 못하고, 검증 누락·중복·불일치 문제가 발생했다.
+
+### 문제 상황
+
+**1) DTO에 비즈니스 규칙이 혼재**
+
+```java
+// AS-IS: DTO에 형식 검증과 비즈니스 규칙이 혼재
+public class AuctionCreateRequest {
+    @NotBlank           // 형식 검증
+    private String title;
+
+    @Min(1000)          // 비즈니스 규칙 (시작가 1,000원 이상)
+    @Positive           // 비즈니스 규칙
+    private Long startingPrice;
+}
+```
+
+**2) 도메인 모델이 무방비 상태**
+
+DTO 검증은 컨트롤러 경로(`@Valid`)에서만 작동한다. 그러나 엔티티에 데이터가 들어오는 경로는 컨트롤러만이 아니다:
+- `AuctionService.endAuction()` → `ChatService.createRoom()` (서비스 간 내부 호출)
+- `AuctionLifecycleScheduler` → `AuctionService.activateAuction()` (스케줄러)
+- Kafka 컨슈머 → `BidService` (이벤트 기반 자동입찰)
+
+이런 경로에서는 DTO를 거치지 않으므로, 비즈니스 규칙이 DTO에만 있으면 잘못된 값이 엔티티에 그대로 저장될 수 있었다.
+
+**3) 검증 누락 발견**
+
+PR #8(`fix/validation`)에서 다음 검증이 누락되어 있음을 발견했다:
+- 경매 등록 기간 범위 (1시간~7일)
+- 즉시구매가 > 시작가 제약
+- 후기 작성 기한 (경매 종료 후 14일 이내)
+- 입찰 히스토리 페이지네이션
+
+### 해결
+
+2단계에 걸쳐 검증 책임을 재배치했다.
+
+**원칙:**
+- **DTO**: 형식 검증만 (`@NotNull`, `@NotBlank`, `@Email`)
+- **엔티티/모델**: 비즈니스 규칙 (값 범위, 상태 전이, 도메인 판단)
+- **서비스**: DB 조회가 필요한 검증, 교차 엔티티 검증
+
+**적용 예시 — Auction:**
+
+```java
+// TO-BE: 엔티티가 자기 불변식을 보호
+public class Auction {
+    private void validateStartingPrice(Long startingPrice) {
+        if (startingPrice < 1000) {
+            throw new BusinessException(AuctionErrorCode.INVALID_STARTING_PRICE);
+        }
+    }
+
+    private void validateBuyNowPrice(Long buyNowPrice, Long startingPrice) {
+        if (buyNowPrice != null && buyNowPrice <= startingPrice) {
+            throw new BusinessException(AuctionErrorCode.BUY_NOW_PRICE_TOO_LOW);
+        }
+    }
+}
+```
+
+### 결과
+
+| 엔티티 | 추가된 검증 |
+|---|---|
+| `Auction` | `validateStartingPrice` (≥1,000), `validateBuyNowPrice` (> startingPrice), `updateImages` (1~10장), 경매 기간 (1시간~7일) |
+| `Member` | `validateNickname` (2~50자), `validateIntroduction` (≤500자) |
+| `Review` | `validateRating` (1~5), 작성 기한 (경매 종료 후 14일 이내) |
+| `AuthService` | `validatePassword` (8~20자, 인코딩 전 원문 검증) |
+
+- DTO에서 `@Min`, `@Size`, `@Positive`, `@Max` 등 비즈니스 규칙 어노테이션 전량 제거
+- 어떤 경로로 데이터가 들어오든 엔티티가 불변식을 보호하는 구조 확보
+
+---
+
+## ISS-004: 멀티 모듈 JPA EntityScan 실패
+
+| 항목 | 내용 |
+|---|---|
+| **발생일** | 2026-03-20 |
+| **상태** | ✅ 해결 |
+| **영향 범위** | 전체 엔티티 인식 (애플리케이션 기동 실패) |
+| **관련 커밋** | `1548e60` fix(infra): JPA 멀티 모듈 EntityScan 추가 및 설정 보정 |
+
+### 개요
+
+멀티 모듈(`biddo-api`, `biddo-domain`, `biddo-infra`) 구조에서 `biddo-api`의 `BiddoApplication`이 `biddo-domain`에 위치한 엔티티(Auction, Member 등)를 인식하지 못해 **애플리케이션 기동에 실패**하는 문제가 발생했다.
+
+### 문제 상황
+
+Spring Boot의 `@SpringBootApplication`은 해당 클래스의 패키지(`com.biddo.api`)를 기준으로 컴포넌트를 스캔한다. `biddo-domain`의 엔티티는 `com.biddo.domain` 패키지에 있으므로 스캔 범위에 포함되지 않았다.
+
+```
+biddo-api/      com.biddo.api.BiddoApplication   ← 스캔 기점
+biddo-domain/   com.biddo.domain.auction.model   ← 스캔 범위 밖
+biddo-infra/    com.biddo.infra.config           ← 스캔 범위 밖
+```
+
+### 해결
+
+`JpaConfig`에 `@EntityScan`과 `@EnableJpaRepositories`의 basePackages를 `com.biddo`로 지정하고, `BiddoApplication`의 `scanBasePackages`도 동일하게 설정했다.
+
+```java
+// biddo-infra/JpaConfig.java
+@Configuration
+@EnableJpaAuditing
+@EntityScan(basePackages = "com.biddo")
+@EnableJpaRepositories(basePackages = "com.biddo")
+public class JpaConfig {}
+
+// biddo-api/BiddoApplication.java
+@SpringBootApplication(scanBasePackages = "com.biddo")
+public class BiddoApplication { ... }
+```
+
+### 함께 해결한 문제
+
+같은 커밋에서 다음 설정도 보정했다:
+
+| 항목 | 변경 전 | 변경 후 | 사유 |
+|---|---|---|---|
+| `server.port` | 8080 | 9090 | 로컬 환경 포트 충돌 |
+| `ddl-auto` | validate | update | 개발 단계에서 스키마 자동 생성 필요 |
+| `defer-datasource-initialization` | 미설정 | true | `data.sql` 시드 데이터가 JPA 초기화 전에 실행되는 문제 |
