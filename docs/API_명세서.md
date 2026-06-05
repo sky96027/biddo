@@ -404,7 +404,7 @@ Presigned URL 방식으로 클라이언트가 S3에 직접 업로드합니다. �
 | Query | `?cursor=&size=50` |
 | Response | 페이지네이션 응답 (메시지 목록) |
 
-## `POST /api/v1/upload/presigned-url` — 이미지 업로드 URL 발급 *(미구현)*
+## `POST /api/v1/upload/presigned-url` — 이미지 업로드 URL 발급
 
 | 구분 | 내용 |
 | --- | --- |
@@ -431,13 +431,13 @@ Presigned URL 방식으로 클라이언트가 S3에 직접 업로드합니다. �
 | 인증 | 필요 |
 | Response | 200 OK |
 
-## `GET /api/v1/notifications/subscribe` — SSE 알림 구독 *(미구현)*
+## `GET /api/v1/notifications/subscribe` — SSE 알림 구독
 
 | 구분 | 내용 |
 | --- | --- |
 | 인증 | 필요 |
 | Response | `text/event-stream` (SSE 스트림) |
-| 비고 | Last-Event-ID 기반 재연결 복구 지원 예정 |
+| 비고 | Last-Event-ID 기반 재연결 복구 지원. 알림 생성 시 자동 SSE 푸시. |
 
 ---
 

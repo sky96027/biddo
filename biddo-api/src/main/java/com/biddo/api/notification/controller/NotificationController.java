@@ -6,9 +6,12 @@ import com.biddo.api.common.security.CustomUserDetails;
 import com.biddo.api.notification.dto.response.NotificationResponse;
 import com.biddo.domain.notification.entity.Notification;
 import com.biddo.domain.notification.service.NotificationService;
+import com.biddo.infra.sse.NotificationSseAdapter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
@@ -20,6 +23,25 @@ public class NotificationController {
     private static final int DEFAULT_SIZE = 20;
 
     private final NotificationService notificationService;
+    private final NotificationSseAdapter notificationSseAdapter;
+
+    @GetMapping(value = "/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter subscribe(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestHeader(value = "Last-Event-ID", required = false) String lastEventId) {
+        Long memberId = userDetails.getMemberId();
+        SseEmitter emitter = notificationSseAdapter.subscribe(memberId);
+
+        if (lastEventId != null && !lastEventId.isBlank()) {
+            List<Notification> missed = notificationService.findAfter(
+                    memberId, Long.parseLong(lastEventId));
+            for (Notification notification : missed) {
+                notificationSseAdapter.push(memberId, notification);
+            }
+        }
+
+        return emitter;
+    }
 
     @GetMapping
     public ApiResponse<CursorResponse<NotificationResponse>> getNotifications(
