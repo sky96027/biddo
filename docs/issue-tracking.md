@@ -415,3 +415,81 @@ public class BiddoApplication { ... }
 | `server.port` | 8080 | 9090 | 로컬 환경 포트 충돌 |
 | `ddl-auto` | validate | update | 개발 단계에서 스키마 자동 생성 필요 |
 | `defer-datasource-initialization` | 미설정 | true | `data.sql` 시드 데이터가 JPA 초기화 전에 실행되는 문제 |
+
+---
+
+## ISS-005: JPQL `:param IS NULL OR` 패턴 PostgreSQL 타입 추론 실패
+
+| 항목 | 내용 |
+|---|---|
+| **발생일** | 2026-06-08 |
+| **상태** | ✅ 해결 |
+| **영향 범위** | 검색 DB fallback (`AuctionSearchFallback`) |
+| **환경** | PostgreSQL 16, Hibernate 6.6.11, Spring Data JPA 3.4.4 |
+
+### 개요
+
+ES 장애 시 DB fallback으로 전환되는 검색 쿼리에서, 선택적 파라미터를 null로 전달하면 PostgreSQL이 파라미터 타입을 결정하지 못해 `INTERNAL_ERROR`가 발생하는 문제.
+
+### 문제 상황
+
+JPQL에서 동적 필터링을 위해 흔히 사용하는 패턴:
+
+```java
+@Query("""
+    SELECT a FROM Auction a
+    WHERE (:keyword IS NULL OR a.title LIKE CONCAT('%', :keyword, '%'))
+    AND (:categoryId IS NULL OR a.category.id = :categoryId)
+    AND (:endBefore IS NULL OR a.endTime <= :endBefore)
+    ...
+    """)
+List<Auction> searchAuctions(@Param("keyword") String keyword, ...);
+```
+
+이 패턴은 **H2(테스트)에서는 정상 동작하지만 PostgreSQL에서는 실패**한다.
+
+**에러 1단계**: `operator does not exist: character varying ~~ bytea`
+- keyword가 null일 때 Hibernate가 LIKE 연산의 파라미터를 `bytea`로 전달
+- CAST 추가로 해결 가능하지만 근본 해결 아님
+
+**에러 2단계**: `could not determine data type of parameter $9`
+- `endBefore`, `cursor` 등 null 파라미터의 타입을 PostgreSQL이 추론 불가
+- `:param IS NULL` 구문은 타입 컨텍스트를 제공하지 않으므로 DB가 판단할 수 없음
+
+### 근본 원인
+
+| 항목 | 설명 |
+|---|---|
+| JPQL 한계 | JPQL은 정적 쿼리 → 모든 파라미터가 항상 바인딩됨 |
+| PostgreSQL 엄격성 | H2와 달리 null 파라미터에도 명시적 타입을 요구 |
+| 패턴 부적합 | `:param IS NULL OR` 패턴은 동적 조건 수가 많을수록 문제 발생 확률 증가 |
+
+### 해결
+
+`AuctionSearchFallback`을 `EntityManager` 기반 동적 쿼리로 교체. non-null 파라미터만 조건에 추가하여 타입 추론 문제를 원천 차단.
+
+```java
+StringBuilder jpql = new StringBuilder("SELECT a FROM Auction a ... WHERE a.status = 'ACTIVE'");
+Map<String, Object> params = new HashMap<>();
+
+if (condition.getKeyword() != null && !condition.getKeyword().isBlank()) {
+    jpql.append(" AND a.title LIKE :keyword");
+    params.put("keyword", "%" + condition.getKeyword() + "%");
+}
+if (condition.getMinPrice() != null) {
+    jpql.append(" AND a.currentPrice >= :minPrice");
+    params.put("minPrice", condition.getMinPrice());
+}
+// ... 나머지 조건도 동일하게 non-null일 때만 추가
+
+TypedQuery<Auction> query = entityManager.createQuery(jpql.toString(), Auction.class);
+params.forEach(query::setParameter);
+```
+
+### 교훈
+
+| 구분 | 내용 |
+|---|---|
+| `:param IS NULL OR` 패턴 | 파라미터 1~2개일 때만 안전. 다수의 선택적 필터에는 부적합 |
+| 동적 쿼리 전략 | EntityManager 직접 빌드, Criteria API, QueryDSL 중 선택 |
+| 테스트 DB 차이 | H2에서 통과해도 PostgreSQL에서 실패할 수 있으므로 Testcontainers로 실제 DB 테스트 필요 |
