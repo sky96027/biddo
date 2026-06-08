@@ -486,6 +486,29 @@ TypedQuery<Auction> query = entityManager.createQuery(jpql.toString(), Auction.c
 params.forEach(query::setParameter);
 ```
 
+### 함께 발견된 문제: SecurityConfig search permitAll 범위 과다
+
+검색 fallback 수정 후 `/search/recent` API를 테스트하는 과정에서, 토큰 만료 시 403이 아닌 NPE(`userDetails is null`)가 발생하는 문제를 추가로 발견했다.
+
+**원인**: SecurityConfig에서 `GET /api/v1/search/**`를 permitAll로 설정하여, 인증이 필요한 `/search/recent`까지 토큰 없이 컨트롤러에 도달.
+
+```java
+// 변경 전: /search 하위 모든 GET 허용
+.requestMatchers(HttpMethod.GET, "/api/v1/search/**").permitAll()
+
+// 변경 후: 검색 API만 허용
+.requestMatchers(HttpMethod.GET, "/api/v1/search/auctions").permitAll()
+```
+
+**permitAll + 토큰 만료 조합의 위험성**:
+
+| 상황 | permitAll | authenticated |
+|---|---|---|
+| 토큰 유효 | 정상 동작 | 정상 동작 |
+| 토큰 만료/없음 | 컨트롤러 도달 → NPE | 403 반환 (명확한 에러) |
+
+permitAll은 인증 실패를 숨기기 때문에, 와일드카드(`/**`) 사용 시 의도치 않은 경로까지 열릴 수 있다. 가능한 한 구체적인 경로를 지정해야 한다.
+
 ### 교훈
 
 | 구분 | 내용 |
@@ -493,3 +516,4 @@ params.forEach(query::setParameter);
 | `:param IS NULL OR` 패턴 | 파라미터 1~2개일 때만 안전. 다수의 선택적 필터에는 부적합 |
 | 동적 쿼리 전략 | EntityManager 직접 빌드, Criteria API, QueryDSL 중 선택 |
 | 테스트 DB 차이 | H2에서 통과해도 PostgreSQL에서 실패할 수 있으므로 Testcontainers로 실제 DB 테스트 필요 |
+| permitAll 와일드카드 | `/**` 대신 구체적 경로 지정. 인증 필요 API가 허용 범위에 포함되지 않는지 확인 필요 |

@@ -32,7 +32,7 @@ public class SecurityConfig {
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/api/v1/auth/signup", "/api/v1/auth/login", "/api/v1/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/auctions/**", "/api/v1/categories/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/search/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/search/auctions").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/members/{memberId}").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/members/{memberId}/reviews").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
