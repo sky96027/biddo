@@ -13,27 +13,7 @@ import java.util.Optional;
 
 public interface AuctionJpaRepository extends JpaRepository<Auction, Long> {
 
-    @Query("""
-            SELECT a FROM Auction a
-            JOIN FETCH a.seller JOIN FETCH a.category LEFT JOIN FETCH a.images
-            WHERE a.status = 'ACTIVE'
-            AND (:keyword IS NULL OR a.title LIKE CONCAT('%', :keyword, '%'))
-            AND (:categoryId IS NULL OR a.category.id = :categoryId)
-            AND (:minPrice IS NULL OR a.currentPrice >= :minPrice)
-            AND (:maxPrice IS NULL OR a.currentPrice <= :maxPrice)
-            AND (:endBefore IS NULL OR a.endTime <= :endBefore)
-            AND (:cursor IS NULL OR a.id < :cursor)
-            ORDER BY a.id DESC
-            """)
-    List<Auction> searchAuctions(@Param("keyword") String keyword,
-                                  @Param("categoryId") Long categoryId,
-                                  @Param("minPrice") Long minPrice,
-                                  @Param("maxPrice") Long maxPrice,
-                                  @Param("endBefore") LocalDateTime endBefore,
-                                  @Param("cursor") Long cursor,
-                                  Pageable pageable);
-
-    @Query("SELECT a FROM Auction a JOIN FETCH a.seller JOIN FETCH a.category WHERE a.id = :id")
+@Query("SELECT a FROM Auction a JOIN FETCH a.seller JOIN FETCH a.category WHERE a.id = :id")
     Optional<Auction> findByIdWithSeller(@Param("id") Long id);
 
     @Query("SELECT a FROM Auction a JOIN FETCH a.seller JOIN FETCH a.category LEFT JOIN FETCH a.images WHERE a.id = :id")
