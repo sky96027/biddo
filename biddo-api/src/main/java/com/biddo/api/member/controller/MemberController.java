@@ -13,6 +13,7 @@ import com.biddo.domain.auction.port.out.AuctionRepository;
 import com.biddo.domain.member.entity.Member;
 import com.biddo.domain.member.service.MemberService;
 import com.biddo.domain.review.service.ReviewService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "회원")
 @RestController
 @RequestMapping("/api/v1/members")
 @RequiredArgsConstructor

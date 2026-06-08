@@ -7,12 +7,14 @@ import com.biddo.api.report.dto.response.ReportResponse;
 import com.biddo.domain.report.entity.Report;
 import com.biddo.domain.report.entity.ReportStatus;
 import com.biddo.domain.report.service.ReportService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "Admin - 신고 관리")
 @RestController
 @RequestMapping("/api/v1/admin/reports")
 @RequiredArgsConstructor

@@ -11,6 +11,7 @@ import com.biddo.domain.common.exception.BusinessException;
 import com.biddo.domain.auction.exception.AuctionErrorCode;
 import com.biddo.domain.notification.entity.PriceAlert;
 import com.biddo.domain.notification.service.PriceAlertService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "가격 알림")
 @RestController
 @RequestMapping("/api/v1/price-alerts")
 @RequiredArgsConstructor

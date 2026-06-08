@@ -7,6 +7,7 @@ import com.biddo.api.search.dto.response.AuctionSearchResponse;
 import com.biddo.domain.search.dto.AuctionSearchCondition;
 import com.biddo.domain.search.dto.AuctionSearchResult;
 import com.biddo.domain.search.service.SearchService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "검색")
 @RestController
 @RequestMapping("/api/v1/search")
 @RequiredArgsConstructor

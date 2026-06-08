@@ -5,10 +5,12 @@ import com.biddo.api.admin.dto.response.BanResponse;
 import com.biddo.api.common.response.ApiResponse;
 import com.biddo.domain.member.entity.Member;
 import com.biddo.domain.member.service.MemberService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+@Tag(name = "Admin - 회원 관리")
 @RestController
 @RequestMapping("/api/v1/admin/members")
 @RequiredArgsConstructor
