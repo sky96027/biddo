@@ -517,3 +517,80 @@ permitAll은 인증 실패를 숨기기 때문에, 와일드카드(`/**`) 사용
 | 동적 쿼리 전략 | EntityManager 직접 빌드, Criteria API, QueryDSL 중 선택 |
 | 테스트 DB 차이 | H2에서 통과해도 PostgreSQL에서 실패할 수 있으므로 Testcontainers로 실제 DB 테스트 필요 |
 | permitAll 와일드카드 | `/**` 대신 구체적 경로 지정. 인증 필요 API가 허용 범위에 포함되지 않는지 확인 필요 |
+
+---
+
+## ISS-006: 인증/인가 실패 시 500 응답 (401/403 미반환)
+
+| 항목 | 내용 |
+|---|---|
+| **발생일** | 2026-06-08 |
+| **상태** | ✅ 해결 |
+| **영향 범위** | 인증 필요 전체 API 엔드포인트 |
+| **관련 PR** | #35 fix(security): 인증/인가 실패 시 401/403 JSON 응답 반환 |
+
+### 개요
+
+토큰 없이 인증 필수 API를 호출하면 401이 아닌 **500 INTERNAL_ERROR**가 반환되는 문제. 두 가지 원인이 복합적으로 작용했다.
+
+### 문제 상황
+
+**증상**: Swagger UI에서 토큰 미입력 후 `GET /api/v1/members/me` 호출 → 500
+
+```json
+{"success":false,"error":{"code":"INTERNAL_ERROR","message":"서버 내부 오류가 발생했습니다."}}
+```
+
+**기대 동작**: 401 Unauthorized
+
+### 근본 원인
+
+**1) AuthenticationEntryPoint / AccessDeniedHandler 미설정**
+
+`SecurityConfig`에 `exceptionHandling`이 없어서, Spring Security가 인증 실패 시 기본 `/error` 페이지로 리다이렉트 → `GlobalExceptionHandler`의 catch-all(`Exception.class`)이 500으로 처리.
+
+**2) `/api/v1/members/me`가 `{memberId}` permitAll에 매칭**
+
+```java
+// /api/v1/members/{memberId} — permitAll
+// /api/v1/members/me → {memberId}="me"로 매칭 → 인증 없이 컨트롤러 도달
+.requestMatchers(HttpMethod.GET, "/api/v1/members/{memberId}").permitAll()
+```
+
+Spring Security의 경로 매칭에서 `{memberId}`가 `me`를 포함한 모든 문자열과 매칭되므로, `/members/me`가 permitAll로 통과 → `userDetails` null → NPE.
+
+이 문제는 원인 1)만으로는 해결되지 않는다. permitAll로 통과한 요청은 `AuthenticationEntryPoint`를 거치지 않기 때문이다.
+
+### 해결
+
+```java
+// 1. exceptionHandling 추가
+.exceptionHandling(ex -> ex
+        .authenticationEntryPoint(authenticationEntryPoint())   // 401 JSON
+        .accessDeniedHandler(accessDeniedHandler())             // 403 JSON
+)
+
+// 2. /members/me를 {memberId} 패턴보다 먼저 authenticated로 등록
+.requestMatchers("/api/v1/members/me/**").authenticated()       // ← 추가
+.requestMatchers(HttpMethod.GET, "/api/v1/members/{memberId}").permitAll()
+```
+
+Spring Security는 규칙을 **선언 순서대로** 매칭하므로, `/members/me`가 먼저 `authenticated()`에 매칭되어 `{memberId}` 패턴에 도달하지 않는다.
+
+### 검증 결과
+
+| 엔드포인트 | 토큰 없이 | 수정 전 | 수정 후 |
+|---|---|---|---|
+| `GET /members/me` | 인증 필수 | 500 (NPE) | **401** |
+| `GET /members/1` | 공개 | 200 | 200 |
+| `GET /search/recent` | 인증 필수 | 500 (NPE) | **401** |
+| `POST /auctions` | 인증 필수 | 500 | **401** |
+| `GET /search/auctions` | 공개 | 200 | 200 |
+
+### 교훈
+
+| 구분 | 내용 |
+|---|---|
+| exceptionHandling 필수 | Stateless JWT 구조에서는 `AuthenticationEntryPoint`를 반드시 설정. 미설정 시 기본 리다이렉트가 500으로 이어짐 |
+| Path variable 매칭 주의 | `{memberId}` 같은 경로 변수는 `/me`, `/profile` 등 구체적 경로도 매칭함. 구체적 경로를 먼저 선언해야 함 |
+| permitAll + null userDetails | permitAll 경로는 인증 실패해도 컨트롤러에 도달하므로, `@AuthenticationPrincipal`이 null일 수 있음을 항상 고려 |
