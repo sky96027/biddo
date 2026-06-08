@@ -10,6 +10,7 @@ import com.biddo.api.common.security.CustomUserDetails;
 import com.biddo.domain.bid.model.AutoBid;
 import com.biddo.domain.bid.model.Bid;
 import com.biddo.domain.bid.service.BidService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "입찰")
 @RestController
 @RequestMapping("/api/v1/auctions/{auctionId}")
 @RequiredArgsConstructor

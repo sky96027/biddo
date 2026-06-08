@@ -6,6 +6,7 @@ import com.biddo.api.common.security.CustomUserDetails;
 import com.biddo.domain.category.entity.Category;
 import com.biddo.domain.category.service.CategoryRecommendationService;
 import com.biddo.domain.category.service.CategoryService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Tag(name = "카테고리")
 @RestController
 @RequestMapping("/api/v1/categories")
 @RequiredArgsConstructor

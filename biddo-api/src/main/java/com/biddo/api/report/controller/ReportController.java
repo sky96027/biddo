@@ -7,6 +7,7 @@ import com.biddo.api.report.dto.request.ReportCreateRequest;
 import com.biddo.api.report.dto.response.ReportResponse;
 import com.biddo.domain.report.entity.Report;
 import com.biddo.domain.report.service.ReportService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "신고")
 @RestController
 @RequestMapping("/api/v1/reports")
 @RequiredArgsConstructor

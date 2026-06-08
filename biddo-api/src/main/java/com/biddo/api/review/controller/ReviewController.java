@@ -8,6 +8,7 @@ import com.biddo.api.review.dto.response.ReviewListResponse;
 import com.biddo.api.review.dto.response.ReviewResponse;
 import com.biddo.domain.review.entity.Review;
 import com.biddo.domain.review.service.ReviewService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "후기")
 @RestController
 @RequiredArgsConstructor
 public class ReviewController {

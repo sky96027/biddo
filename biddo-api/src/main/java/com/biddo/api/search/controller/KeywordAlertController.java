@@ -7,6 +7,7 @@ import com.biddo.api.search.dto.request.KeywordAlertUpdateRequest;
 import com.biddo.api.search.dto.response.KeywordAlertResponse;
 import com.biddo.domain.search.entity.KeywordAlert;
 import com.biddo.domain.search.service.KeywordAlertService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "키워드 알림")
 @RestController
 @RequestMapping("/api/v1/keyword-alerts")
 @RequiredArgsConstructor

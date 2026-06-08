@@ -7,6 +7,7 @@ import com.biddo.api.notification.dto.response.NotificationResponse;
 import com.biddo.domain.notification.entity.Notification;
 import com.biddo.domain.notification.service.NotificationService;
 import com.biddo.infra.sse.NotificationSseAdapter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -15,6 +16,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
+@Tag(name = "알림")
 @RestController
 @RequestMapping("/api/v1/notifications")
 @RequiredArgsConstructor
