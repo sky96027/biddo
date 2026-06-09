@@ -102,7 +102,7 @@
 | 구분 | 건수 | 상태 |
 |------|------|------|
 | 단위 테스트 | 25개 | ✅ 완료 |
-| 통합 테스트 | 12개 | ✅ 완료 |
+| 통합 테스트 | 16개 | ✅ 완료 |
 | 부하 테스트 | - | 예정 |
 
 ### 통합 테스트 커버리지 매핑
@@ -112,6 +112,7 @@
 | `AuctionLifecycleIntegrationTest` (4개) | REQ-7 (카운트다운/종료), REQ-9 (경매 종료 알림), REQ-23 (낙찰 시 채팅) |
 | `BuyNowIntegrationTest` (4개) | REQ-4 (자동입찰 비활성화), REQ-5 (즉시 구매), REQ-23 (채팅방 생성) |
 | `ConcurrentBidIntegrationTest` (4개) | REQ-1 (입찰 히스토리), REQ-2 (최고 입찰자), REQ-4 (자동입찰 연쇄) |
+| `AuctionEdgeCaseIntegrationTest` (4개) | 경매 경계 조건 (본인 입찰 차단, PENDING 입찰 불가, ACTIVE 수정/취소 불가) |
 
 ---
 
@@ -132,3 +133,11 @@
 | M (1~2일) | 14건 |
 | L (3~5일) | 5건 |
 | XL (1주+) | 1건 |
+
+---
+
+## AWS 마이그레이션 이후 TODO
+
+| 항목 | 설명 |
+|---|---|
+| **로그 적재 방식 전환** | 현재 로컬 파일 적재 (logback-spring.xml). 배포 후 CloudWatch Logs 또는 Loki + Grafana로 전환 검토. profile 분리(`local` / `prod`)로 코드 변경 없이 전환 가능. |
