@@ -12,6 +12,8 @@
 - **Storage**: S3 + CloudFront + Lambda@Edge (이미지 리사이징)
 - **Infra**: EC2 x2 + ALB, Route 53, GitHub Actions CI/CD, Docker
 - **Monitoring**: Prometheus + Grafana + CloudWatch
+- **API 문서**: SpringDoc OpenAPI (Swagger UI)
+- **Logging**: Logback (콘솔 + 로컬 파일, 일별 롤링 30일 보관)
 
 ---
 
@@ -227,11 +229,12 @@ biddo/
 
 ---
 
-## Notion 설계 문서 링크
+## 설계 문서
 - [프로젝트 개요](docs/Biddo-중고_경매_시스템(Used_Auction_System).md)
 - [ERD](docs/ERD.md)
 - [API 명세서](docs/API_명세서.md)
 - [비즈니스 규칙 정의서](docs/비즈니스_규칙_정의서.md)
 - [시스템 아키텍처 & 시퀀스 다이어그램](docs/시스템_아키텍처&시퀀스_다이어그램.md)
 - [프로젝트 구조 & 코딩 컨벤션](docs/프로젝트_구조&코딩_컨벤션.md)
-  - [요구사항 목록](docs/requirements.md)
+- [요구사항 목록](docs/requirements.md)
+- [이슈 트래킹](docs/issue-tracking.md)

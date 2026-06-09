@@ -4,44 +4,80 @@ import com.biddo.domain.auction.model.Auction;
 import com.biddo.domain.search.dto.AuctionSearchCondition;
 import com.biddo.domain.search.dto.AuctionSearchResult;
 import com.biddo.infra.auction.AuctionJpaRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
 public class AuctionSearchFallback {
 
     private final AuctionJpaRepository auctionJpaRepository;
+    private final EntityManager entityManager;
 
     public List<AuctionSearchResult> search(AuctionSearchCondition condition) {
         int size = Math.min(condition.getSize(), 100);
-        PageRequest pageRequest = PageRequest.of(0, size);
 
-        LocalDateTime endBefore = null;
+        StringBuilder jpql = new StringBuilder("""
+                SELECT a FROM Auction a
+                JOIN FETCH a.seller JOIN FETCH a.category LEFT JOIN FETCH a.images
+                WHERE a.status = 'ACTIVE'
+                """);
+
+        Map<String, Object> params = new HashMap<>();
+
+        if (condition.getKeyword() != null && !condition.getKeyword().isBlank()) {
+            jpql.append(" AND a.title LIKE :keyword");
+            params.put("keyword", "%" + condition.getKeyword() + "%");
+        }
+
+        if (condition.getCategoryId() != null) {
+            jpql.append(" AND a.category.id = :categoryId");
+            params.put("categoryId", condition.getCategoryId());
+        }
+
+        if (condition.getMinPrice() != null) {
+            jpql.append(" AND a.currentPrice >= :minPrice");
+            params.put("minPrice", condition.getMinPrice());
+        }
+
+        if (condition.getMaxPrice() != null) {
+            jpql.append(" AND a.currentPrice <= :maxPrice");
+            params.put("maxPrice", condition.getMaxPrice());
+        }
+
         if (condition.getEndWithin() != null) {
-            endBefore = switch (condition.getEndWithin()) {
+            LocalDateTime endBefore = switch (condition.getEndWithin()) {
                 case "1h" -> LocalDateTime.now().plusHours(1);
                 case "24h" -> LocalDateTime.now().plusHours(24);
                 case "3d" -> LocalDateTime.now().plusDays(3);
                 default -> null;
             };
+            if (endBefore != null) {
+                jpql.append(" AND a.endTime <= :endBefore");
+                params.put("endBefore", endBefore);
+            }
         }
 
-        List<Auction> auctions = auctionJpaRepository.searchAuctions(
-                condition.getKeyword(),
-                condition.getCategoryId(),
-                condition.getMinPrice(),
-                condition.getMaxPrice(),
-                endBefore,
-                condition.getCursor(),
-                pageRequest
-        );
+        if (condition.getCursor() != null) {
+            jpql.append(" AND a.id < :cursor");
+            params.put("cursor", condition.getCursor());
+        }
 
-        return auctions.stream()
+        jpql.append(" ORDER BY a.id DESC");
+
+        TypedQuery<Auction> query = entityManager.createQuery(jpql.toString(), Auction.class);
+        params.forEach(query::setParameter);
+        query.setMaxResults(size);
+
+        return query.getResultList().stream()
                 .map(this::toSearchResult)
                 .toList();
     }

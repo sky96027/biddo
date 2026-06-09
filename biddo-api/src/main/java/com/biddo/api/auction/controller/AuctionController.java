@@ -15,6 +15,7 @@ import com.biddo.domain.search.dto.AuctionSearchResult;
 import com.biddo.domain.search.port.AuctionSearchPort;
 import com.biddo.infra.redis.PopularAuctionRepository;
 import com.biddo.infra.sse.AuctionSseService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -28,6 +29,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Tag(name = "경매")
 @RestController
 @RequestMapping("/api/v1/auctions")
 @RequiredArgsConstructor

@@ -18,6 +18,7 @@ import com.biddo.domain.member.entity.Member;
 import com.biddo.domain.member.exception.MemberErrorCode;
 import com.biddo.domain.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +27,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.IntStream;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -80,6 +82,7 @@ public class AuctionService {
 
         auctionEventPublisher.publishAuctionCreated(auction);
         auctionLifecyclePort.scheduleActivation(auction.getId(), auction.getStartTime());
+        log.info("경매 등록: auctionId={}, sellerId={}, startingPrice={}", auction.getId(), sellerId, startingPrice);
         return auction;
     }
 
@@ -121,6 +124,7 @@ public class AuctionService {
         auction.cancel();
         auctionLifecyclePort.cancelSchedule(auction.getId());
         auctionEventPublisher.publishAuctionCancelled(auction);
+        log.info("경매 취소: auctionId={}, sellerId={}", auctionId, memberId);
     }
 
     @Transactional
@@ -144,6 +148,7 @@ public class AuctionService {
         auctionRepository.save(auction);
         auctionLifecyclePort.scheduleEnd(auction.getId(), auction.getEndTime());
         auctionEventPublisher.publishAuctionActivated(auction);
+        log.info("경매 활성화: auctionId={}, PENDING → ACTIVE", auctionId);
     }
 
     @Transactional
@@ -161,6 +166,9 @@ public class AuctionService {
         }
 
         auctionEventPublisher.publishAuctionEnded(auction);
+        log.info("경매 종료: auctionId={}, ACTIVE → ENDED, winnerId={}, finalPrice={}",
+                auctionId, auction.getWinner() != null ? auction.getWinner().getId() : "유찰",
+                auction.getCurrentPrice());
     }
 
     public Auction findById(Long auctionId) {

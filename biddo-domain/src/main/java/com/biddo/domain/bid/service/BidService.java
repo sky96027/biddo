@@ -20,6 +20,7 @@ import com.biddo.domain.member.entity.Member;
 import com.biddo.domain.member.exception.MemberErrorCode;
 import com.biddo.domain.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -28,6 +29,7 @@ import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BidService {
@@ -84,6 +86,8 @@ public class BidService {
         Bid bid = createBid(auction, bidder, bidAmount, BidType.MANUAL);
         extendIfSniping(auction);
         bidEventPublisher.publishBidPlaced(bid);
+        log.info("입찰 성공: auctionId={}, bidderId={}, amount={}, currentPrice={}",
+                auctionId, bidderId, bidAmount, auction.getCurrentPrice());
 
         processAutoBids(auction, bidderId);
 
@@ -108,6 +112,8 @@ public class BidService {
         chatService.createRoom(auction);
         bidEventPublisher.publishBidPlaced(bid);
         auctionEventPublisher.publishAuctionSold(auction);
+        log.info("즉시구매 완료: auctionId={}, buyerId={}, price={}",
+                auctionId, bidderId, auction.getBuyNowPrice());
 
         return bid;
     }
@@ -187,6 +193,7 @@ public class BidService {
     }
 
     private void processAutoBids(Auction auction, Long triggerBidderId) {
+        int chainCount = 0;
         for (int i = 0; i < MAX_AUTO_BID_CHAIN; i++) {
             List<AutoBid> activeAutoBids = autoBidRepository
                     .findActiveByAuctionIdExcludingBidder(auction.getId(), triggerBidderId);
@@ -216,12 +223,17 @@ public class BidService {
             Bid autoBid = createBid(auction, bestAutoBid.getBidder(), autoBidAmount, BidType.AUTO);
             extendIfSniping(auction);
             bidEventPublisher.publishBidPlaced(autoBid);
+            chainCount++;
 
             if (bestAutoBid.getMaxAmount() <= autoBidAmount + calculateMinIncrement(autoBidAmount)) {
                 bestAutoBid.deactivate();
             }
 
             triggerBidderId = bestAutoBid.getBidder().getId();
+        }
+        if (chainCount > 0) {
+            log.debug("자동입찰 연쇄 처리: auctionId={}, chainCount={}, finalPrice={}",
+                    auction.getId(), chainCount, auction.getCurrentPrice());
         }
     }
 

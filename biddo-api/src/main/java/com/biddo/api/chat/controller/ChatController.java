@@ -8,12 +8,14 @@ import com.biddo.api.common.security.CustomUserDetails;
 import com.biddo.domain.chat.entity.ChatMessage;
 import com.biddo.domain.chat.entity.ChatRoom;
 import com.biddo.domain.chat.service.ChatService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "채팅")
 @RestController
 @RequestMapping("/api/v1/chat")
 @RequiredArgsConstructor
