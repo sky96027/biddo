@@ -171,3 +171,5 @@ flowchart TB
 [시스템 아키텍처 & 시퀀스 다이어그램](시스템_아키텍처&시퀀스_다이어그램.md)
 
 [[claude.md] (AI 개발 가이드)](../claude.md)
+
+[이슈 트래킹](issue-tracking.md)
