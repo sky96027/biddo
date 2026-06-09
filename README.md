@@ -14,6 +14,8 @@
 | Storage | S3 + CloudFront + Lambda@Edge (이미지 리사이징) |
 | Infra | EC2 x2 + ALB, Route 53, GitHub Actions CI/CD, Docker |
 | Monitoring | Prometheus + Grafana + CloudWatch |
+| API Docs | SpringDoc OpenAPI (Swagger UI) |
+| Logging | Logback (콘솔 + 로컬 파일, 일별 롤링) |
 
 ## 프로젝트 구조
 
@@ -117,6 +119,8 @@ cp .env.example .env
 - **페이지네이션**: Cursor 기반 (No-Offset)
 - **응답 포맷**: `{ success, data, error: { code, message } }`
 
+Swagger UI: `http://localhost:9090/swagger-ui/index.html`
+
 상세 API 명세는 [docs/API_명세서.md](docs/API_명세서.md)를 참고하세요.
 
 ## 설계 문서
@@ -128,6 +132,7 @@ cp .env.example .env
 - [시스템 아키텍처 & 시퀀스 다이어그램](docs/시스템_아키텍처&시퀀스_다이어그램.md)
 - [프로젝트 구조 & 코딩 컨벤션](docs/프로젝트_구조&코딩_컨벤션.md)
 - [요구사항 목록](docs/requirements.md)
+- [이슈 트래킹](docs/issue-tracking.md)
 
 ## Git 컨벤션
 
