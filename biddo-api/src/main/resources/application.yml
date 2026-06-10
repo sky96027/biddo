@@ -15,6 +15,9 @@ spring:
       hibernate:
         format_sql: true
         default_batch_fetch_size: 100
+        jdbc:
+          batch_size: 50
+        order_updates: true
     open-in-view: false
     defer-datasource-initialization: true
 

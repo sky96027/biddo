@@ -82,25 +82,19 @@ biddo/
 ### 실행
 
 ```bash
-# 1. 인프라 실행 (PostgreSQL, Redis, Kafka, Zookeeper)
+# 1. 환경 변수 설정 (Docker Compose용)
+cp .env.example .env
+
+# 2. 인프라 실행 (PostgreSQL, Redis, Kafka, Zookeeper)
 docker-compose up -d
 
-# 2. 애플리케이션 실행
+# 3. 애플리케이션 실행
 ./gradlew :biddo-api:bootRun
 ```
 
 서버는 `http://localhost:9090` 에서 실행됩니다.
 
-### 환경 변수
-
-로컬 개발 시 `application.yml`의 기본값으로 동작합니다. EC2 배포 시 `.env` 파일로 오버라이드합니다.
-
-```bash
-cp .env.example .env
-# .env 파일에서 환경 변수 수정
-```
-
-주요 환경 변수: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`, `REDIS_HOST`, `REDIS_PORT`, `KAFKA_BOOTSTRAP_SERVERS`, `ELASTICSEARCH_URI`, `JWT_SECRET`
+> `.env.example`의 기본값 그대로 사용하면 됩니다. EC2 배포 시에만 값을 수정합니다.
 
 ## 테스트
 

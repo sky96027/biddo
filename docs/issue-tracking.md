@@ -594,3 +594,67 @@ Spring Security는 규칙을 **선언 순서대로** 매칭하므로, `/members/
 | exceptionHandling 필수 | Stateless JWT 구조에서는 `AuthenticationEntryPoint`를 반드시 설정. 미설정 시 기본 리다이렉트가 500으로 이어짐 |
 | Path variable 매칭 주의 | `{memberId}` 같은 경로 변수는 `/me`, `/profile` 등 구체적 경로도 매칭함. 구체적 경로를 먼저 선언해야 함 |
 | permitAll + null userDetails | permitAll 경로는 인증 실패해도 컨트롤러에 도달하므로, `@AuthenticationPrincipal`이 null일 수 있음을 항상 고려 |
+
+---
+
+## ISS-007: Hibernate 배치 UPDATE 최적화 적용
+
+| 항목 | 내용 |
+|---|---|
+| **발생일** | 2026-06-09 |
+| **상태** | ✅ 적용 |
+| **유형** | 성능 개선 (Improvement) |
+| **영향 범위** | 한 트랜잭션에서 다건 UPDATE가 발생하는 작업 (TrustScoreScheduler 등) |
+
+### 개요
+
+`TrustScoreScheduler`가 매일 새벽 전체 회원의 신뢰도 점수를 재계산할 때, 회원 수만큼 개별 UPDATE 쿼리가 발생하는 구조였다. Hibernate 배치 설정을 추가하여 UPDATE를 묶어서 전송하도록 최적화했다.
+
+### 변경 전
+
+```
+recalculateAll() 실행 시 (회원 100명 가정):
+UPDATE member SET trust_score = 3.0 WHERE member_id = 1;
+UPDATE member SET trust_score = 2.9 WHERE member_id = 2;
+...
+→ DB 네트워크 왕복 100회
+```
+
+JPA dirty checking으로 트랜잭션 커밋 시점에 변경된 엔티티마다 개별 UPDATE가 발생한다.
+
+### 변경 후
+
+```yaml
+hibernate:
+  properties:
+    hibernate:
+      jdbc:
+        batch_size: 50
+      order_updates: true
+```
+
+- `batch_size: 50` — UPDATE를 최대 50건씩 묶어서 DB에 한 번에 전송
+- `order_updates: true` — 같은 테이블의 UPDATE를 연속 배치하여 배치 효율 극대화
+
+```
+회원 100명 → 50건 + 50건 = DB 네트워크 왕복 2회
+회원 35명 → 35건 한 번에 flush = DB 네트워크 왕복 1회
+```
+
+### IDENTITY 전략과의 관계
+
+| 작업 | IDENTITY에서 배치 가능 여부 |
+|------|--------------------------|
+| 배치 INSERT | ❌ 불가 (INSERT 후 DB에서 ID를 받아야 하므로 한 건씩 실행) |
+| 배치 UPDATE | ✅ 가능 (ID가 이미 확정된 상태) |
+
+현재 프로젝트는 `GenerationType.IDENTITY`를 사용하므로 배치 INSERT는 불가하지만, 신뢰도 재계산처럼 **기존 엔티티를 다건 UPDATE하는 작업**에서는 배치 효과를 얻을 수 있다.
+
+### 영향 범위
+
+| 대상 | 배치 효과 |
+|------|----------|
+| `TrustScoreCalculator.recalculateAll()` | ✅ 전체 회원 UPDATE → 배치 적용 |
+| 일반 API (입찰, 경매 수정 등) | 영향 없음 (단건 처리) |
+
+글로벌 설정이지만 단건 작업에는 부작용 없이, 다건 UPDATE 작업에서만 성능 개선이 적용된다.

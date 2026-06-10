@@ -46,4 +46,10 @@
     <logger name="org.springframework.kafka" level="WARN"/>
     <logger name="org.apache.kafka" level="WARN"/>
 
+    <!-- 배치 처리 확인용 -->
+    <!--    <logger name="org.hibernate.engine.jdbc.batch" level="TRACE"/>  -->
+    <!--    <logger name="org.hibernate.orm.jdbc.batch" level="TRACE"/>     -->
+
+
+
 </configuration>

@@ -42,3 +42,4 @@ out/
 data
 .env
 logs/
+docs/test-accounts.md
