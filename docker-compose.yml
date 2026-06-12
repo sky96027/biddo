@@ -16,6 +16,7 @@ services:
     image: redis:7-alpine
     container_name: biddo-redis
     env_file: .env
+    command: redis-server --notify-keyspace-events Ex
     ports:
       - "${REDIS_PORT}:6379"
     volumes:
