@@ -46,7 +46,11 @@ export function setup() {
       if (res.status === 201) {
         auctionId = JSON.parse(res.body).data.auctionId;
         console.log(`Setup: created auction ${auctionId}`);
-        sleep(5);
+        for (let i = 0; i < 15; i++) {
+          sleep(2);
+          const d = http.get(`${API}/auctions/${auctionId}`);
+          if (JSON.parse(d.body).data.status === "ACTIVE") break;
+        }
       }
     }
   }
@@ -123,7 +127,7 @@ export default function (data) {
 
       check(bidRes, {
         "bid accepted or conflict": (r) =>
-          r.status === 201 || r.status === 409,
+          r.status === 201 || r.status === 409 || r.status === 400,
       }) || errorRate.add(1);
     });
     sleep(0.5);

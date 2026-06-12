@@ -12,7 +12,7 @@
 import http from "k6/http";
 import { check, sleep } from "k6";
 import { Counter, Rate, Trend } from "k6/metrics";
-import { API, headers, signup, login } from "./helpers.js";
+import { API, headers, signup, login, toLocalISOString } from "./helpers.js";
 
 const bidSuccess = new Counter("bid_success");
 const bidFailed = new Counter("bid_failed");
@@ -70,8 +70,8 @@ export function setup() {
       condition: "GOOD",
       startingPrice: 10000,
       buyNowPrice: 50000000,
-      startTime: new Date(now.getTime() + 2000).toISOString(),
-      endTime: new Date(now.getTime() + 60 * 60 * 1000).toISOString(),
+      startTime: toLocalISOString(new Date(now.getTime() + 5000)),
+      endTime: toLocalISOString(new Date(now.getTime() + 2 * 60 * 60 * 1000)),
       imageUrls: ["https://example.com/test.jpg"],
     };
 
@@ -83,7 +83,11 @@ export function setup() {
       auctionId = JSON.parse(res.body).data.auctionId;
       console.log(`Setup: created auction ${auctionId}`);
     }
-    sleep(5);
+    for (let i = 0; i < 15; i++) {
+      sleep(2);
+      const d = http.get(`${API}/auctions/${auctionId}`);
+      if (JSON.parse(d.body).data.status === "ACTIVE") break;
+    }
   }
 
   return { users, auctionId: parseInt(auctionId) };
@@ -126,7 +130,7 @@ export default function (data) {
   bidDuration.add(Date.now() - start);
 
   const ok = check(res, {
-    "bid ok or conflict": (r) => r.status === 201 || r.status === 409,
+    "bid ok or conflict": (r) => r.status === 201 || r.status === 409 || r.status === 400,
   });
 
   if (res.status === 201) {

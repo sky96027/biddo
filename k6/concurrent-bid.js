@@ -18,7 +18,7 @@
 import http from "k6/http";
 import { check, sleep } from "k6";
 import { Counter, Rate, Trend } from "k6/metrics";
-import { API, headers, signup, login } from "./helpers.js";
+import { API, headers, signup, login, toLocalISOString } from "./helpers.js";
 
 // --- Custom Metrics ---
 const bidSuccess = new Counter("bid_success");
@@ -77,7 +77,7 @@ export function setup() {
     signup(sellerEmail, PASSWORD, `seller_${ts}`);
     const sellerToken = login(sellerEmail, PASSWORD);
 
-    // 경매 생성 (즉시 시작)
+    // 경매 생성 (5초 후 시작, 2시간 후 종료)
     const now = new Date();
     const body = {
       title: `K6 Concurrent Bid Test ${ts}`,
@@ -86,8 +86,8 @@ export function setup() {
       condition: "GOOD",
       startingPrice: 10000,
       buyNowPrice: 10000000,
-      startTime: new Date(now.getTime() + 2000).toISOString(),
-      endTime: new Date(now.getTime() + 30 * 60 * 1000).toISOString(),
+      startTime: toLocalISOString(new Date(now.getTime() + 5000)),
+      endTime: toLocalISOString(new Date(now.getTime() + 2 * 60 * 60 * 1000)),
       imageUrls: ["https://example.com/test.jpg"],
     };
 
@@ -102,13 +102,15 @@ export function setup() {
       console.error(`Setup: auction creation failed - ${res.status} ${res.body}`);
     }
 
-    // PENDING -> ACTIVE 전환 대기 (Redis TTL)
+    // PENDING -> ACTIVE 전환 대기 (폴링, 최대 30초)
     console.log("Setup: waiting for auction to become ACTIVE...");
-    sleep(5);
-
-    // ACTIVE 상태 확인
-    const detail = http.get(`${API}/auctions/${auctionId}`);
-    const status = JSON.parse(detail.body).data.status;
+    let status = "PENDING";
+    for (let i = 0; i < 15; i++) {
+      sleep(2);
+      const detail = http.get(`${API}/auctions/${auctionId}`);
+      status = JSON.parse(detail.body).data.status;
+      if (status === "ACTIVE") break;
+    }
     console.log(`Setup: auction ${auctionId} status = ${status}`);
   }
 
@@ -121,56 +123,64 @@ export default function (data) {
   if (!user) return;
 
   const auctionId = data.auctionId;
+  const MAX_RETRIES = 3;
 
-  // 현재가 조회
-  const detail = http.get(`${API}/auctions/${auctionId}`, {
-    tags: { name: "getAuction" },
-  });
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    // 현재가 조회
+    const detail = http.get(`${API}/auctions/${auctionId}`, {
+      tags: { name: "getAuction" },
+    });
 
-  let currentPrice = 10000;
-  if (detail.status === 200) {
-    const auction = JSON.parse(detail.body).data;
-    currentPrice = auction.currentPrice || auction.startingPrice;
-  }
-
-  // 현재가 기반 입찰 금액 계산 (최소 증가 단위 적용)
-  const increment = calculateMinIncrement(currentPrice);
-  const bidAmount = currentPrice + increment;
-
-  // 입찰
-  const start = Date.now();
-  const res = http.post(
-    `${API}/auctions/${auctionId}/bids`,
-    JSON.stringify({ bidAmount }),
-    {
-      headers: headers.auth(user.token),
-      tags: { name: "placeBid" },
+    let currentPrice = 10000;
+    if (detail.status === 200) {
+      const auction = JSON.parse(detail.body).data;
+      currentPrice = auction.currentPrice || auction.startingPrice;
     }
-  );
-  bidDuration.add(Date.now() - start);
 
-  const success = check(res, {
-    "bid accepted (201)": (r) => r.status === 201,
-    "response has bidId": (r) => {
-      if (r.status !== 201) return false;
-      const body = JSON.parse(r.body);
-      return body.data && body.data.bidId;
-    },
-  });
+    // 현재가 기반 입찰 금액 계산 (최소 증가 단위 적용)
+    const increment = calculateMinIncrement(currentPrice);
+    const bidAmount = currentPrice + increment;
 
-  if (success) {
-    bidSuccess.add(1);
-    bidErrorRate.add(0);
-  } else if (res.status === 409) {
-    // 동시 입찰 충돌 (정상적인 비즈니스 에러)
-    bidConflict.add(1);
-    bidErrorRate.add(0);
-  } else {
-    bidFailed.add(1);
-    bidErrorRate.add(1);
-    console.warn(
-      `VU${__VU} bid failed: ${res.status} ${res.body}`
+    // 입찰
+    const start = Date.now();
+    const res = http.post(
+      `${API}/auctions/${auctionId}/bids`,
+      JSON.stringify({ bidAmount }),
+      {
+        headers: headers.auth(user.token),
+        tags: { name: "placeBid" },
+      }
     );
+    bidDuration.add(Date.now() - start);
+
+    if (res.status === 201) {
+      check(res, {
+        "bid accepted (201)": () => true,
+        "response has bidId": (r) => {
+          const body = JSON.parse(r.body);
+          return body.data && body.data.bidId;
+        },
+      });
+      bidSuccess.add(1);
+      bidErrorRate.add(0);
+      break;
+    } else if (res.status === 400 && res.body && res.body.includes("BID_003")) {
+      // 최소 입찰 금액 미달 — 현재가가 이미 올랐으므로 재시도
+      if (attempt === MAX_RETRIES) {
+        bidConflict.add(1);
+        bidErrorRate.add(0);
+      }
+      continue;
+    } else if (res.status === 409) {
+      bidConflict.add(1);
+      bidErrorRate.add(0);
+      break;
+    } else {
+      bidFailed.add(1);
+      bidErrorRate.add(1);
+      console.warn(`VU${__VU} bid failed: ${res.status} ${res.body}`);
+      break;
+    }
   }
 
   sleep(Math.random() * 0.5);

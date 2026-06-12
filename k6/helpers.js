@@ -3,6 +3,19 @@ import http from "k6/http";
 export const BASE_URL = __ENV.BASE_URL || "http://localhost:9090";
 export const API = `${BASE_URL}/api/v1`;
 
+// 서버가 타임존 없는 LocalDateTime을 기대하므로 로컬 시간 포맷 반환
+export function toLocalISOString(date) {
+  const pad = (n) => String(n).padStart(2, "0");
+  return (
+    date.getFullYear() +
+    "-" + pad(date.getMonth() + 1) +
+    "-" + pad(date.getDate()) +
+    "T" + pad(date.getHours()) +
+    ":" + pad(date.getMinutes()) +
+    ":" + pad(date.getSeconds())
+  );
+}
+
 export const headers = {
   json: { "Content-Type": "application/json" },
   auth(token) {
@@ -35,10 +48,10 @@ export function login(email, password) {
 
 export function createAuction(token, overrides = {}) {
   const now = new Date();
-  const startTime = new Date(now.getTime() + 5000).toISOString();
-  const endTime = new Date(
-    now.getTime() + 2 * 60 * 60 * 1000
-  ).toISOString();
+  const startTime = toLocalISOString(new Date(now.getTime() + 5000));
+  const endTime = toLocalISOString(
+    new Date(now.getTime() + 2 * 60 * 60 * 1000)
+  );
 
   const body = Object.assign(
     {
