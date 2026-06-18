@@ -1,0 +1,11 @@
+# <type>(<scope>): <subject>
+#
+# type: feat, fix, docs, style, refactor, test, chore
+# scope: auction, bid, member, chat, notification, search, review, report, admin, k6, ...
+# subject: 명령조 한글 (예: 경매 종료 시간 계산 오류 수정)
+#
+# 예시:
+#   feat(bid): 자동 입찰 기능 구현
+#   fix(auction): 경매 종료 시간 계산 오류 수정
+#   test(integration): 경매 경계 조건 통합 테스트 추가
+#   chore(gradle): Testcontainers 의존성 추가
