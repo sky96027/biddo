@@ -54,7 +54,7 @@ class ConcurrentBidIntegrationTest extends IntegrationTestBase {
 
     @Test
     @DisplayName("10명이 동시에 입찰하면 분산 락으로 1건씩 순차 처리되어 데이터 정합성이 보장된다")
-    void concurrentBids_shouldMaintainDataIntegrity() throws InterruptedException {
+    void placeBid_10명이동일금액으로동시입찰_1명만성공하고데이터정합성보장() throws InterruptedException {
         // given
         Auction auction = createActiveAuction(seller, category, 10_000L, null);
         Long auctionId = auction.getId();
@@ -117,7 +117,7 @@ class ConcurrentBidIntegrationTest extends IntegrationTestBase {
 
     @Test
     @DisplayName("10명이 서로 다른 금액으로 동시 입찰하면 가장 높은 금액이 현재가가 된다")
-    void concurrentBidsWithDifferentAmounts_highestWins() throws InterruptedException {
+    void placeBid_10명이서로다른금액으로동시입찰_최고금액이현재가로반영() throws InterruptedException {
         // given
         Auction auction = createActiveAuction(seller, category, 10_000L, null);
         Long auctionId = auction.getId();
@@ -168,7 +168,7 @@ class ConcurrentBidIntegrationTest extends IntegrationTestBase {
 
     @Test
     @DisplayName("자동입찰 설정자가 있으면 수동 입찰 시 자동입찰이 연쇄 발동된다")
-    void manualBidTriggersAutoBid_chain() {
+    void placeBid_자동입찰설정자존재시수동입찰_자동입찰이연쇄발동() {
         // given
         Auction auction = createActiveAuction(seller, category, 10_000L, null);
         Long auctionId = auction.getId();
@@ -195,7 +195,7 @@ class ConcurrentBidIntegrationTest extends IntegrationTestBase {
 
     @Test
     @DisplayName("자동입찰 연쇄는 최대 10회로 제한된다")
-    void autoBidChain_limitedTo10() {
+    void placeBid_두자동입찰자가충분한금액설정_연쇄최대10회로제한() {
         // given
         Auction auction = createActiveAuction(seller, category, 10_000L, null);
         Long auctionId = auction.getId();

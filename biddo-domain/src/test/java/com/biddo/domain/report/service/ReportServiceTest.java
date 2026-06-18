@@ -53,7 +53,7 @@ class ReportServiceTest {
 
     @Test
     @DisplayName("신고 접수 성공")
-    void create_success() {
+    void create_validInput_returnsSavedReport() {
         given(memberRepository.findById(1L)).willReturn(Optional.of(reporter));
         given(memberRepository.findById(2L)).willReturn(Optional.of(reported));
         given(reportRepository.save(any(Report.class))).willAnswer(inv -> {
@@ -71,7 +71,7 @@ class ReportServiceTest {
 
     @Test
     @DisplayName("신고 실패 - 본인 신고")
-    void create_selfReport() {
+    void create_selfReport_throwsException() {
         assertThatThrownBy(() -> reportService.create(1L, 1L, null, ReportReason.FRAUD, "설명"))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
@@ -80,7 +80,7 @@ class ReportServiceTest {
 
     @Test
     @DisplayName("신고 상태 변경 성공")
-    void updateStatus_success() {
+    void updateStatus_validInput_returnsUpdatedReport() {
         Report report = Report.builder()
                 .reporter(reporter).reported(reported)
                 .reason(ReportReason.NO_TRADE).description("거래 거부")
@@ -97,7 +97,7 @@ class ReportServiceTest {
 
     @Test
     @DisplayName("신고 상태 변경 실패 - 신고 없음")
-    void updateStatus_notFound() {
+    void updateStatus_notFound_throwsException() {
         given(reportRepository.findById(999L)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> reportService.updateStatus(999L, ReportStatus.RESOLVED, "메모"))

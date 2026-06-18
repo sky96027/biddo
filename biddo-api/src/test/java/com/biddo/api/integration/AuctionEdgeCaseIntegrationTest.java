@@ -43,7 +43,7 @@ class AuctionEdgeCaseIntegrationTest extends IntegrationTestBase {
 
     @Test
     @DisplayName("판매자 본인은 자기 경매에 입찰할 수 없다")
-    void placeBid_bySeller_fails() {
+    void placeBid_판매자본인이입찰_throwsException() {
         // given
         Auction auction = createActiveAuction(seller, category, 10_000L, null);
 
@@ -54,7 +54,7 @@ class AuctionEdgeCaseIntegrationTest extends IntegrationTestBase {
 
     @Test
     @DisplayName("PENDING 상태 경매에는 입찰할 수 없다")
-    void placeBid_onPendingAuction_fails() {
+    void placeBid_PENDING상태경매에입찰_throwsException() {
         // given: PENDING 상태 (아직 activate 안 함)
         Auction auction = auctionService.create(
                 seller.getId(), category.getId(),
@@ -73,7 +73,7 @@ class AuctionEdgeCaseIntegrationTest extends IntegrationTestBase {
 
     @Test
     @DisplayName("ACTIVE 상태 경매는 수정할 수 없다 (PENDING에서만 가능)")
-    void update_activeAuction_fails() {
+    void update_ACTIVE상태경매수정시도_throwsException() {
         // given
         Auction auction = createActiveAuction(seller, category, 10_000L, null);
 
@@ -89,7 +89,7 @@ class AuctionEdgeCaseIntegrationTest extends IntegrationTestBase {
 
     @Test
     @DisplayName("ACTIVE 상태 경매는 취소할 수 없다 (PENDING에서만 가능)")
-    void cancel_activeAuction_fails() {
+    void cancel_ACTIVE상태경매취소시도_throwsException() {
         // given
         Auction auction = createActiveAuction(seller, category, 10_000L, null);
 

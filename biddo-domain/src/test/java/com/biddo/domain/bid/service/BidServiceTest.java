@@ -134,7 +134,7 @@ class BidServiceTest {
 
         @Test
         @DisplayName("입찰 성공")
-        void success() {
+        void placeBid_validBid_success() {
             long bidAmount = 515_000L;
             given(auctionRepository.findById(1L)).willReturn(Optional.of(auction));
             given(memberRepository.findById(2L)).willReturn(Optional.of(bidder));
@@ -159,7 +159,7 @@ class BidServiceTest {
 
         @Test
         @DisplayName("입찰 실패 - 경매 ACTIVE 아님")
-        void fail_notActive() {
+        void placeBid_notActive_throwsException() {
             Auction pendingAuction = createPendingAuction();
             given(auctionRepository.findById(1L)).willReturn(Optional.of(pendingAuction));
             given(memberRepository.findById(2L)).willReturn(Optional.of(bidder));
@@ -172,7 +172,7 @@ class BidServiceTest {
 
         @Test
         @DisplayName("입찰 실패 - 본인 경매")
-        void fail_selfBid() {
+        void placeBid_selfBid_throwsException() {
             given(auctionRepository.findById(1L)).willReturn(Optional.of(auction));
             given(memberRepository.findById(1L)).willReturn(Optional.of(seller));
 
@@ -184,7 +184,7 @@ class BidServiceTest {
 
         @Test
         @DisplayName("입찰 실패 - 금액 부족")
-        void fail_amountTooLow() {
+        void placeBid_amountTooLow_throwsException() {
             given(auctionRepository.findById(1L)).willReturn(Optional.of(auction));
             given(memberRepository.findById(2L)).willReturn(Optional.of(bidder));
 
@@ -201,7 +201,7 @@ class BidServiceTest {
 
         @Test
         @DisplayName("즉시 구매 성공")
-        void success() {
+        void buyNow_validAuction_success() {
             Auction auctionWithBuyNow = createActiveAuction(500_000L, 1_000_000L);
             given(auctionRepository.findById(1L)).willReturn(Optional.of(auctionWithBuyNow));
             given(memberRepository.findById(2L)).willReturn(Optional.of(bidder));
@@ -224,7 +224,7 @@ class BidServiceTest {
 
         @Test
         @DisplayName("즉시 구매 실패 - 즉시구매가 미설정")
-        void fail_noBuyNowPrice() {
+        void buyNow_noBuyNowPrice_throwsException() {
             given(auctionRepository.findById(1L)).willReturn(Optional.of(auction));
             given(memberRepository.findById(2L)).willReturn(Optional.of(bidder));
 
@@ -241,7 +241,7 @@ class BidServiceTest {
 
         @Test
         @DisplayName("자동 입찰 설정 성공")
-        void success() {
+        void setAutoBid_newSetting_success() {
             given(auctionRepository.findById(1L)).willReturn(Optional.of(auction));
             given(memberRepository.findById(2L)).willReturn(Optional.of(bidder));
             given(autoBidRepository.findByAuctionIdAndBidderId(1L, 2L)).willReturn(Optional.empty());
@@ -259,7 +259,7 @@ class BidServiceTest {
 
         @Test
         @DisplayName("자동 입찰 수정 성공 - 이미 설정 존재")
-        void success_update() {
+        void setAutoBid_existingSetting_updatesMaxAmount() {
             AutoBid existingAutoBid = AutoBid.builder()
                     .auction(auction)
                     .bidder(bidder)
@@ -279,7 +279,7 @@ class BidServiceTest {
 
         @Test
         @DisplayName("자동 입찰 실패 - 최대 금액 부족")
-        void fail_maxTooLow() {
+        void setAutoBid_maxTooLow_throwsException() {
             given(auctionRepository.findById(1L)).willReturn(Optional.of(auction));
             given(memberRepository.findById(2L)).willReturn(Optional.of(bidder));
 
@@ -296,28 +296,28 @@ class BidServiceTest {
 
         @Test
         @DisplayName("0~9,999원: 10%")
-        void tier1() {
+        void calculateMinIncrement_under10000_returns10Percent() {
             assertThat(BidService.calculateMinIncrement(5_000L)).isEqualTo(500L);
             assertThat(BidService.calculateMinIncrement(3_340L)).isEqualTo(400L);
         }
 
         @Test
         @DisplayName("10,000~99,999원: 5%")
-        void tier2() {
+        void calculateMinIncrement_10000to99999_returns5Percent() {
             assertThat(BidService.calculateMinIncrement(50_000L)).isEqualTo(2_500L);
             assertThat(BidService.calculateMinIncrement(33_000L)).isEqualTo(1_700L);
         }
 
         @Test
         @DisplayName("100,000~999,999원: 3%")
-        void tier3() {
+        void calculateMinIncrement_100000to999999_returns3Percent() {
             assertThat(BidService.calculateMinIncrement(300_000L)).isEqualTo(9_000L);
             assertThat(BidService.calculateMinIncrement(500_000L)).isEqualTo(15_000L);
         }
 
         @Test
         @DisplayName("1,000,000원 이상: 1%")
-        void tier4() {
+        void calculateMinIncrement_over1000000_returns1Percent() {
             assertThat(BidService.calculateMinIncrement(5_000_000L)).isEqualTo(50_000L);
             assertThat(BidService.calculateMinIncrement(1_230_000L)).isEqualTo(12_300L);
         }
@@ -329,7 +329,7 @@ class BidServiceTest {
 
         @Test
         @DisplayName("종료 10분 전 입찰 시 연장")
-        void extendOnSniping() {
+        void placeBid_lastTenMinutes_extendsEndTime() {
             Auction snipingAuction = createActiveAuctionEndingSoon();
             given(auctionRepository.findById(1L)).willReturn(Optional.of(snipingAuction));
             given(memberRepository.findById(2L)).willReturn(Optional.of(bidder));
@@ -355,7 +355,7 @@ class BidServiceTest {
 
         @Test
         @DisplayName("수동 입찰 시 자동 입찰 트리거")
-        void triggersAutoBid() {
+        void placeBid_withActiveAutoBid_triggersAutoBid() {
             AutoBid autoBid = AutoBid.builder()
                     .auction(auction)
                     .bidder(bidder2)

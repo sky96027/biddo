@@ -127,7 +127,7 @@ class SearchServiceTest {
 
         @Test
         @DisplayName("최근 검색어 목록을 반환한다")
-        void getRecentSearches() {
+        void getRecentSearches_hasSearches_returnsResult() {
             // given
             Long memberId = 1L;
             given(recentSearchPort.findByMemberId(memberId))
@@ -142,7 +142,7 @@ class SearchServiceTest {
 
         @Test
         @DisplayName("특정 최근 검색어를 삭제한다")
-        void deleteRecentSearch() {
+        void deleteRecentSearch_validKeyword_success() {
             // given
             Long memberId = 1L;
 
@@ -155,7 +155,7 @@ class SearchServiceTest {
 
         @Test
         @DisplayName("전체 최근 검색어를 삭제한다")
-        void deleteAllRecentSearches() {
+        void deleteAllRecentSearches_validMember_success() {
             // given
             Long memberId = 1L;
 
