@@ -26,7 +26,7 @@ biddo/
 
 **의존성**: `biddo-api → biddo-domain, biddo-infra` / `biddo-infra → biddo-domain`
 
-아키텍처·모듈 규칙은 `.claude/rules/architecture.md` 참조할 것.
+아키텍처·모듈 규칙은 `.claude/rules/architecture.md`, 작업 흐름은 `.claude/rules/workflow.md`를 따를 것.
 
 ---
 
@@ -36,6 +36,10 @@ biddo/
 
 - `port/out/` 패키지가 존재하는 도메인 → `.claude/harnesses/port-adapter/prompt.md`
 - 그 외 도메인 → `.claude/harnesses/layered/prompt.md`
+- 테스트 작성 시 → `.claude/harnesses/test/prompt.md`
+- 코드 리뷰는 **사용자가 요청한 경우에만** → `.claude/harnesses/review/prompt.md`
+
+API 응답 규칙은 `.claude/rules/api-response.md`를 따를 것.
 
 harness 파일은 자유 접근. docs/와 달리 사용자 허가 불필요.
 
@@ -83,3 +87,4 @@ harness 파일은 자유 접근. docs/와 달리 사용자 허가 불필요.
 
 - 브랜치: `main` → `develop` → `feature/{도메인}-{기능}`
 - 커밋: `<type>(<scope>): <subject>` (feat, fix, docs, style, refactor, test, chore)
+- PR/Issue 생성 시 `.github/` 템플릿을 따를 것.
