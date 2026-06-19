@@ -73,7 +73,7 @@ class ChatServiceTest {
 
     @Test
     @DisplayName("채팅방 생성 성공")
-    void createRoom_success() {
+    void createRoom_validAuction_returnsCreatedRoom() {
         given(chatRoomRepository.existsByAuctionId(1L)).willReturn(false);
         given(chatRoomRepository.save(any(ChatRoom.class))).willAnswer(inv -> {
             ChatRoom cr = inv.getArgument(0);
@@ -92,7 +92,7 @@ class ChatServiceTest {
 
     @Test
     @DisplayName("채팅방 생성 실패 - 이미 존재")
-    void createRoom_alreadyExists() {
+    void createRoom_alreadyExists_throwsException() {
         given(chatRoomRepository.existsByAuctionId(1L)).willReturn(true);
 
         assertThatThrownBy(() -> chatService.createRoom(auction))
@@ -103,7 +103,7 @@ class ChatServiceTest {
 
     @Test
     @DisplayName("메시지 전송 성공")
-    void sendMessage_success() {
+    void sendMessage_validInput_returnsSavedMessage() {
         given(chatRoomRepository.findByIdWithMembers(1L)).willReturn(Optional.of(chatRoom));
         given(chatMessageRepository.save(any(ChatMessage.class))).willAnswer(inv -> {
             ChatMessage msg = inv.getArgument(0);
@@ -119,7 +119,7 @@ class ChatServiceTest {
 
     @Test
     @DisplayName("메시지 전송 실패 - 참여자 아님")
-    void sendMessage_notParticipant() {
+    void sendMessage_notParticipant_throwsException() {
         given(chatRoomRepository.findByIdWithMembers(1L)).willReturn(Optional.of(chatRoom));
 
         Member stranger = Member.builder().email("stranger@test.com").password("encoded").nickname("stranger").build();
@@ -133,7 +133,7 @@ class ChatServiceTest {
 
     @Test
     @DisplayName("메시지 전송 실패 - 채팅방 종료")
-    void sendMessage_closed() {
+    void sendMessage_closedRoom_throwsException() {
         chatRoom.close();
         given(chatRoomRepository.findByIdWithMembers(1L)).willReturn(Optional.of(chatRoom));
 
@@ -145,7 +145,7 @@ class ChatServiceTest {
 
     @Test
     @DisplayName("읽음 처리 성공")
-    void markAsRead_success() {
+    void markAsRead_validInput_updatesLastReadMessageId() {
         given(chatRoomRepository.findByIdWithMembers(1L)).willReturn(Optional.of(chatRoom));
 
         chatService.markAsRead(1L, 2L, 10L);

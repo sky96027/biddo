@@ -26,7 +26,7 @@ class JwtTokenProviderTest {
 
     @Test
     @DisplayName("Access Token 생성 및 파싱 성공")
-    void createAndParseAccessToken() {
+    void createAccessToken_validInput_parsesCorrectly() {
         String token = jwtTokenProvider.createAccessToken(1L, "USER");
 
         assertThat(jwtTokenProvider.validateToken(token)).isTrue();
@@ -36,7 +36,7 @@ class JwtTokenProviderTest {
 
     @Test
     @DisplayName("Refresh Token 생성 — role 없음")
-    void createRefreshTokenWithoutRole() {
+    void createRefreshToken_validInput_roleIsNull() {
         String token = jwtTokenProvider.createRefreshToken(1L);
 
         assertThat(jwtTokenProvider.validateToken(token)).isTrue();
@@ -46,13 +46,13 @@ class JwtTokenProviderTest {
 
     @Test
     @DisplayName("잘못된 토큰 검증 실패")
-    void invalidToken() {
+    void validateToken_invalidToken_returnsFalse() {
         assertThat(jwtTokenProvider.validateToken("invalid.token.here")).isFalse();
     }
 
     @Test
     @DisplayName("만료된 토큰 검증 실패")
-    void expiredToken() {
+    void validateToken_expiredToken_returnsFalse() {
         ReflectionTestUtils.setField(jwtTokenProvider, "accessTokenExpiration", -1000L);
         jwtTokenProvider.init();
 

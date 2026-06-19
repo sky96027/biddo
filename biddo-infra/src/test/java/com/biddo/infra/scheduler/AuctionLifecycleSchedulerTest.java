@@ -31,7 +31,7 @@ class AuctionLifecycleSchedulerTest {
 
     @Test
     @DisplayName("PENDING 경매를 조회하여 activate를 호출한다")
-    void activatesPendingAuctions() {
+    void processAuctionLifecycle_pendingAuctionsExist_activatesAll() {
         // given
         Auction auction1 = mockAuction(1L);
         Auction auction2 = mockAuction(2L);
@@ -49,7 +49,7 @@ class AuctionLifecycleSchedulerTest {
 
     @Test
     @DisplayName("ACTIVE 경매를 조회하여 end를 호출한다")
-    void endsActiveAuctions() {
+    void processAuctionLifecycle_activeAuctionsExist_endsAll() {
         // given
         Auction auction1 = mockAuction(10L);
         Auction auction2 = mockAuction(11L);
@@ -67,7 +67,7 @@ class AuctionLifecycleSchedulerTest {
 
     @Test
     @DisplayName("activate 중 일부 경매가 실패해도 나머지는 정상 처리된다")
-    void activateFailure_doesNotBlockOthers() {
+    void processAuctionLifecycle_activatePartialFailure_processesRemainingAuctions() {
         // given
         Auction auction1 = mockAuction(1L);
         Auction auction2 = mockAuction(2L);
@@ -89,7 +89,7 @@ class AuctionLifecycleSchedulerTest {
 
     @Test
     @DisplayName("end 중 일부 경매가 실패해도 나머지는 정상 처리된다")
-    void endFailure_doesNotBlockOthers() {
+    void processAuctionLifecycle_endPartialFailure_processesRemainingAuctions() {
         // given
         Auction auction1 = mockAuction(10L);
         Auction auction2 = mockAuction(11L);
@@ -111,7 +111,7 @@ class AuctionLifecycleSchedulerTest {
 
     @Test
     @DisplayName("처리할 경매가 없으면 서비스 호출 없이 종료된다")
-    void noAuctions_noServiceCalls() {
+    void processAuctionLifecycle_noAuctionsFound_doesNotCallService() {
         // given
         given(auctionRepository.findPendingAuctionsToActivate(any())).willReturn(List.of());
         given(auctionRepository.findActiveAuctionsToEnd(any())).willReturn(List.of());

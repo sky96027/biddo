@@ -40,7 +40,7 @@ class CategoryRecommendationServiceTest {
 
     @Test
     @DisplayName("입찰 이력 기반 카테고리 추천")
-    void recommend_bidBased() {
+    void recommend_bidHistoryExists_returnsBidBasedCategories() {
         given(bidRepository.findTopCategoryIdsByBidderId(1L, 10)).willReturn(List.of(1L, 2L, 3L));
         given(priceAlertRepository.findActiveAuctionIdsByMemberId(1L)).willReturn(List.of());
 
@@ -56,7 +56,7 @@ class CategoryRecommendationServiceTest {
 
     @Test
     @DisplayName("가격 알림 기반 카테고리 추천 추가")
-    void recommend_priceAlertBased() {
+    void recommend_priceAlertExists_returnsPriceAlertBasedCategories() {
         given(bidRepository.findTopCategoryIdsByBidderId(1L, 10)).willReturn(List.of(1L));
         given(priceAlertRepository.findActiveAuctionIdsByMemberId(1L)).willReturn(List.of(100L));
 
@@ -74,7 +74,7 @@ class CategoryRecommendationServiceTest {
 
     @Test
     @DisplayName("중복 카테고리 제거")
-    void recommend_deduplication() {
+    void recommend_duplicateCategoryIds_returnsDeduplicatedList() {
         given(bidRepository.findTopCategoryIdsByBidderId(1L, 10)).willReturn(List.of(1L, 2L));
         given(priceAlertRepository.findActiveAuctionIdsByMemberId(1L)).willReturn(List.of(100L));
 
@@ -92,7 +92,7 @@ class CategoryRecommendationServiceTest {
 
     @Test
     @DisplayName("이력 없는 사용자 — 빈 목록 반환")
-    void recommend_noHistory() {
+    void recommend_noHistoryExists_returnsEmptyList() {
         given(bidRepository.findTopCategoryIdsByBidderId(1L, 10)).willReturn(List.of());
         given(priceAlertRepository.findActiveAuctionIdsByMemberId(1L)).willReturn(List.of());
 
@@ -103,7 +103,7 @@ class CategoryRecommendationServiceTest {
 
     @Test
     @DisplayName("최대 5개까지만 추천")
-    void recommend_maxFive() {
+    void recommend_moreThanFiveCategories_returnsMaxFive() {
         given(bidRepository.findTopCategoryIdsByBidderId(1L, 10))
                 .willReturn(List.of(1L, 2L, 3L, 4L, 5L, 6L, 7L));
         given(priceAlertRepository.findActiveAuctionIdsByMemberId(1L)).willReturn(List.of());

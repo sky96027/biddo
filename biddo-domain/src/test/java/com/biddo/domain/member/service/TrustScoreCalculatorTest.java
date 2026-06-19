@@ -52,7 +52,7 @@ class TrustScoreCalculatorTest {
 
     @Test
     @DisplayName("모든 요소 반영된 점수 계산")
-    void calculate_allFactors() {
+    void calculate_allFactorsPresent_returnsWeightedScore() {
         given(reviewRepository.findAverageRatingByRevieweeId(1L)).willReturn(Optional.of(4.0));
         given(auctionRepository.countTotalEndedBySellerId(1L)).willReturn(10L);
         given(auctionRepository.countCompletedBySellerId(1L)).willReturn(8L);
@@ -70,7 +70,7 @@ class TrustScoreCalculatorTest {
 
     @Test
     @DisplayName("리뷰 없는 신규 회원 — 가입 기간만 반영")
-    void calculate_newMember() {
+    void calculate_noReviewNewMember_returnsAccountAgeScoreOnly() {
         ReflectionTestUtils.setField(member, "createdAt", LocalDateTime.now().minusDays(30));
         given(reviewRepository.findAverageRatingByRevieweeId(1L)).willReturn(Optional.empty());
         given(auctionRepository.countTotalEndedBySellerId(1L)).willReturn(0L);
@@ -84,7 +84,7 @@ class TrustScoreCalculatorTest {
 
     @Test
     @DisplayName("신고 이력 있으면 감점")
-    void calculate_withReportPenalty() {
+    void calculate_hasResolvedReports_returnsReducedScore() {
         given(reviewRepository.findAverageRatingByRevieweeId(1L)).willReturn(Optional.of(4.5));
         given(auctionRepository.countTotalEndedBySellerId(1L)).willReturn(10L);
         given(auctionRepository.countCompletedBySellerId(1L)).willReturn(10L);
@@ -102,7 +102,7 @@ class TrustScoreCalculatorTest {
 
     @Test
     @DisplayName("점수가 0 미만이면 0으로 클램핑")
-    void calculate_clampToZero() {
+    void calculate_scoreBelowZero_returnsZero() {
         given(reviewRepository.findAverageRatingByRevieweeId(1L)).willReturn(Optional.of(0.0));
         given(auctionRepository.countTotalEndedBySellerId(1L)).willReturn(0L);
         given(reportRepository.countResolvedByReportedId(1L)).willReturn(20L);
@@ -114,7 +114,7 @@ class TrustScoreCalculatorTest {
 
     @Test
     @DisplayName("점수가 5.0 초과이면 5.0으로 클램핑")
-    void calculate_clampToMax() {
+    void calculate_scoreExceedsMax_returnsFive() {
         ReflectionTestUtils.setField(member, "createdAt", LocalDateTime.now().minusDays(500));
         given(reviewRepository.findAverageRatingByRevieweeId(1L)).willReturn(Optional.of(5.0));
         given(auctionRepository.countTotalEndedBySellerId(1L)).willReturn(100L);
@@ -128,7 +128,7 @@ class TrustScoreCalculatorTest {
 
     @Test
     @DisplayName("recalculateAll — 전체 회원 점수 재계산")
-    void recalculateAll() {
+    void recalculateAll_membersExist_updatesAllScores() {
         given(memberRepository.findAll()).willReturn(List.of(member));
         given(reviewRepository.findAverageRatingByRevieweeId(1L)).willReturn(Optional.of(3.0));
         given(auctionRepository.countTotalEndedBySellerId(1L)).willReturn(5L);
@@ -143,7 +143,7 @@ class TrustScoreCalculatorTest {
 
     @Test
     @DisplayName("거래 완료율 100% — 만점 반영")
-    void calculate_perfectCompletionRate() {
+    void calculate_perfectCompletionRate_returnsHighScore() {
         given(reviewRepository.findAverageRatingByRevieweeId(1L)).willReturn(Optional.of(5.0));
         given(auctionRepository.countTotalEndedBySellerId(1L)).willReturn(20L);
         given(auctionRepository.countCompletedBySellerId(1L)).willReturn(20L);

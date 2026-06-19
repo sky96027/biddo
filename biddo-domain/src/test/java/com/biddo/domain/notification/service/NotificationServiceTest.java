@@ -76,7 +76,7 @@ class NotificationServiceTest {
 
     @Test
     @DisplayName("알림 목록 조회 - 전체 (첫 페이지)")
-    void findByReceiverId_allFirstPage() {
+    void findByReceiverId_allFirstPage_returnsResult() {
         given(notificationRepository.findByReceiverIdFirstPage(eq(1L), any(PageRequest.class)))
                 .willReturn(List.of(notification));
 
@@ -87,7 +87,7 @@ class NotificationServiceTest {
 
     @Test
     @DisplayName("알림 목록 조회 - 안읽은 것만 (첫 페이지)")
-    void findByReceiverId_unreadFirstPage() {
+    void findByReceiverId_unreadFirstPage_returnsResult() {
         given(notificationRepository.findUnreadByReceiverIdFirstPage(eq(1L), any(PageRequest.class)))
                 .willReturn(List.of(notification));
 
@@ -98,7 +98,7 @@ class NotificationServiceTest {
 
     @Test
     @DisplayName("알림 목록 조회 - 커서 기반")
-    void findByReceiverId_withCursor() {
+    void findByReceiverId_withCursor_returnsResult() {
         given(notificationRepository.findByReceiverIdWithCursor(eq(1L), eq(10L), any(PageRequest.class)))
                 .willReturn(List.of(notification));
 
@@ -109,7 +109,7 @@ class NotificationServiceTest {
 
     @Test
     @DisplayName("알림 목록 조회 - 안읽은 것만 + 커서")
-    void findByReceiverId_unreadWithCursor() {
+    void findByReceiverId_unreadWithCursor_returnsResult() {
         given(notificationRepository.findUnreadByReceiverIdWithCursor(eq(1L), eq(10L), any(PageRequest.class)))
                 .willReturn(List.of(notification));
 
@@ -130,7 +130,7 @@ class NotificationServiceTest {
 
     @Test
     @DisplayName("읽음 처리 실패 - 알림 미존재")
-    void markAsRead_notFound() {
+    void markAsRead_notFound_throwsException() {
         given(notificationRepository.findById(999L)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> notificationService.markAsRead(999L, 1L))
@@ -141,7 +141,7 @@ class NotificationServiceTest {
 
     @Test
     @DisplayName("읽음 처리 실패 - 본인 알림 아님")
-    void markAsRead_notOwner() {
+    void markAsRead_notOwner_throwsException() {
         given(notificationRepository.findById(1L)).willReturn(Optional.of(notification));
 
         assertThatThrownBy(() -> notificationService.markAsRead(1L, 999L))

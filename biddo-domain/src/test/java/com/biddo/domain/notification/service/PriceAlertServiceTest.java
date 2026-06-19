@@ -73,7 +73,7 @@ class PriceAlertServiceTest {
 
     @Test
     @DisplayName("가격 알림 생성 실패 - 중복")
-    void create_duplicate() {
+    void create_duplicate_throwsException() {
         given(priceAlertRepository.existsByMemberIdAndAuctionId(1L, 100L)).willReturn(true);
 
         assertThatThrownBy(() -> priceAlertService.create(1L, 100L, 10, 50000L))
@@ -84,7 +84,7 @@ class PriceAlertServiceTest {
 
     @Test
     @DisplayName("가격 알림 목록 조회")
-    void findByMemberId() {
+    void findByMemberId_hasAlerts_returnsResult() {
         given(priceAlertRepository.findByMemberIdOrderByIdDesc(1L)).willReturn(List.of(priceAlert));
 
         List<PriceAlert> result = priceAlertService.findByMemberId(1L);
@@ -104,7 +104,7 @@ class PriceAlertServiceTest {
 
     @Test
     @DisplayName("가격 알림 수정 실패 - 본인 아님")
-    void update_notOwner() {
+    void update_notOwner_throwsException() {
         given(priceAlertRepository.findById(1L)).willReturn(Optional.of(priceAlert));
 
         assertThatThrownBy(() -> priceAlertService.update(1L, 999L, 20))
@@ -115,7 +115,7 @@ class PriceAlertServiceTest {
 
     @Test
     @DisplayName("가격 알림 토글 - 비활성화")
-    void toggleActive_deactivate() {
+    void toggleActive_activeAlert_deactivatesAlert() {
         given(priceAlertRepository.findById(1L)).willReturn(Optional.of(priceAlert));
 
         priceAlertService.toggleActive(1L, 1L);
@@ -125,7 +125,7 @@ class PriceAlertServiceTest {
 
     @Test
     @DisplayName("가격 알림 토글 - 활성화")
-    void toggleActive_activate() {
+    void toggleActive_inactiveAlert_activatesAlert() {
         priceAlert.deactivate();
         given(priceAlertRepository.findById(1L)).willReturn(Optional.of(priceAlert));
 
@@ -146,7 +146,7 @@ class PriceAlertServiceTest {
 
     @Test
     @DisplayName("가격 알림 삭제 실패 - 미존재")
-    void delete_notFound() {
+    void delete_notFound_throwsException() {
         given(priceAlertRepository.findById(999L)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> priceAlertService.delete(999L, 1L))
@@ -157,19 +157,19 @@ class PriceAlertServiceTest {
 
     @Test
     @DisplayName("PriceAlert.isTriggered - 임계값 이상 상승 시 true")
-    void isTriggered_true() {
+    void isTriggered_aboveThreshold_returnsTrue() {
         assertThat(priceAlert.isTriggered(55000L)).isTrue(); // 10% 상승
     }
 
     @Test
     @DisplayName("PriceAlert.isTriggered - 임계값 미만 상승 시 false")
-    void isTriggered_false() {
+    void isTriggered_belowThreshold_returnsFalse() {
         assertThat(priceAlert.isTriggered(54000L)).isFalse(); // 8% 상승
     }
 
     @Test
     @DisplayName("PriceAlert.isTriggered - 비활성 상태 시 false")
-    void isTriggered_inactive() {
+    void isTriggered_inactiveAlert_returnsFalse() {
         priceAlert.deactivate();
         assertThat(priceAlert.isTriggered(60000L)).isFalse();
     }
