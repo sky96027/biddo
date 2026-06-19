@@ -171,4 +171,4 @@ flowchart TB
 
 [[claude.md] (AI 개발 가이드)](../claude.md)
 
-[이슈 트래킹](issue-tracking.md)
+[이슈 트래킹](https://github.com/sky96027/biddo/issues)

@@ -126,7 +126,7 @@ Swagger UI: `http://localhost:9090/swagger-ui/index.html`
 - [시스템 아키텍처 & 시퀀스 다이어그램](docs/시스템_아키텍처&시퀀스_다이어그램.md)
 - [프로젝트 구조 & 코딩 컨벤션](docs/프로젝트_구조&코딩_컨벤션.md)
 - [요구사항 목록](docs/requirements.md)
-- [이슈 트래킹](docs/issue-tracking.md)
+- [이슈 트래킹](https://github.com/sky96027/biddo/issues)
 
 ## Git 컨벤션
 
