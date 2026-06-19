@@ -43,7 +43,7 @@ class AuctionLifecycleIntegrationTest extends IntegrationTestBase {
 
     @Test
     @DisplayName("PENDING → ACTIVE → 입찰 → ENDED → 낙찰자 결정 + 채팅방 생성")
-    void fullLifecycle_withWinner() {
+    void auctionLifecycle_입찰있는경매종료_낙찰자결정및채팅방생성() {
         // given: PENDING 상태로 경매 생성
         Auction auction = auctionService.create(
                 seller.getId(), category.getId(),
@@ -87,7 +87,7 @@ class AuctionLifecycleIntegrationTest extends IntegrationTestBase {
 
     @Test
     @DisplayName("입찰 없이 종료되면 유찰 처리 (winner=null, 채팅방 미생성)")
-    void lifecycle_noSale() {
+    void endAuction_입찰없이종료_유찰처리되고채팅방미생성() {
         // given
         Auction auction = auctionService.create(
                 seller.getId(), category.getId(),
@@ -112,7 +112,7 @@ class AuctionLifecycleIntegrationTest extends IntegrationTestBase {
 
     @Test
     @DisplayName("종료 10분 전 입찰 시 endTime이 +10분 연장된다 (스나이핑 방지)")
-    void snipingPrevention_extendsEndTime() {
+    void placeBid_종료10분전입찰_endTime이10분연장() {
         // given: 종료 5분 전 경매
         Auction auction = createSnipingAuction(seller, category, 10_000L);
         LocalDateTime originalEndTime = auction.getEndTime();
@@ -129,7 +129,7 @@ class AuctionLifecycleIntegrationTest extends IntegrationTestBase {
 
     @Test
     @DisplayName("PENDING 상태에서 취소하면 CANCELLED 전환")
-    void cancel_fromPending() {
+    void cancel_PENDING상태에서취소_CANCELLED로전환() {
         // given
         Auction auction = auctionService.create(
                 seller.getId(), category.getId(),

@@ -88,7 +88,7 @@ class AuctionServiceTest {
 
     @Test
     @DisplayName("경매 생성 성공")
-    void create_success() {
+    void create_validInput_success() {
         given(memberRepository.findById(1L)).willReturn(Optional.of(seller));
         given(categoryRepository.findById(9L)).willReturn(Optional.of(category));
         given(auctionRepository.save(any(Auction.class))).willAnswer(invocation -> {
@@ -109,7 +109,7 @@ class AuctionServiceTest {
 
     @Test
     @DisplayName("경매 생성 실패 - 카테고리 없음")
-    void create_categoryNotFound() {
+    void create_categoryNotFound_throwsException() {
         given(memberRepository.findById(1L)).willReturn(Optional.of(seller));
         given(categoryRepository.findById(999L)).willReturn(Optional.empty());
 
@@ -122,7 +122,7 @@ class AuctionServiceTest {
 
     @Test
     @DisplayName("경매 수정 성공")
-    void update_success() {
+    void update_validInput_success() {
         Auction auction = createPendingAuction();
         given(auctionRepository.findById(1L)).willReturn(Optional.of(auction));
         given(categoryRepository.findById(9L)).willReturn(Optional.of(category));
@@ -138,7 +138,7 @@ class AuctionServiceTest {
 
     @Test
     @DisplayName("경매 수정 실패 - 판매자가 아님")
-    void update_notSeller() {
+    void update_notSeller_throwsException() {
         Auction auction = createPendingAuction();
         given(auctionRepository.findById(1L)).willReturn(Optional.of(auction));
 
@@ -151,7 +151,7 @@ class AuctionServiceTest {
 
     @Test
     @DisplayName("경매 수정 실패 - PENDING 상태가 아님")
-    void update_notPending() {
+    void update_notPending_throwsException() {
         Auction auction = createPendingAuction();
         auction.cancel();
         given(auctionRepository.findById(1L)).willReturn(Optional.of(auction));
@@ -165,7 +165,7 @@ class AuctionServiceTest {
 
     @Test
     @DisplayName("경매 취소 성공")
-    void cancel_success() {
+    void cancel_validAuction_success() {
         Auction auction = createPendingAuction();
         given(auctionRepository.findById(1L)).willReturn(Optional.of(auction));
 
@@ -177,7 +177,7 @@ class AuctionServiceTest {
 
     @Test
     @DisplayName("경매 취소 실패 - 판매자가 아님")
-    void cancel_notSeller() {
+    void cancel_notSeller_throwsException() {
         Auction auction = createPendingAuction();
         given(auctionRepository.findById(1L)).willReturn(Optional.of(auction));
 
@@ -189,7 +189,7 @@ class AuctionServiceTest {
 
     @Test
     @DisplayName("경매 생성 실패 - 회원 없음")
-    void create_memberNotFound() {
+    void create_memberNotFound_throwsException() {
         given(memberRepository.findById(999L)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> auctionService.create(999L, 9L, "iPhone", "설명",
@@ -201,7 +201,7 @@ class AuctionServiceTest {
 
     @Test
     @DisplayName("경매 생성 실패 - 종료시간이 시작시간 이전")
-    void create_invalidTime() {
+    void create_invalidTime_throwsException() {
         given(memberRepository.findById(1L)).willReturn(Optional.of(seller));
         given(categoryRepository.findById(9L)).willReturn(Optional.of(category));
 
@@ -216,7 +216,7 @@ class AuctionServiceTest {
 
     @Test
     @DisplayName("경매 조회 실패 - 존재하지 않음")
-    void findById_notFound() {
+    void findById_notExists_throwsException() {
         given(auctionRepository.findByIdWithImages(999L)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> auctionService.findById(999L))
@@ -225,7 +225,7 @@ class AuctionServiceTest {
 
     @Test
     @DisplayName("관리자 경매 강제 취소 성공 - ACTIVE 경매")
-    void forceCancel_active() {
+    void forceCancel_activeAuction_success() {
         Auction auction = createPendingAuction();
         setField(auction, "status", AuctionStatus.ACTIVE);
         given(auctionRepository.findById(1L)).willReturn(Optional.of(auction));
@@ -238,7 +238,7 @@ class AuctionServiceTest {
 
     @Test
     @DisplayName("관리자 경매 강제 취소 실패 - 이미 취소됨")
-    void forceCancel_alreadyCancelled() {
+    void forceCancel_alreadyCancelled_throwsException() {
         Auction auction = createPendingAuction();
         auction.cancel();
         given(auctionRepository.findById(1L)).willReturn(Optional.of(auction));

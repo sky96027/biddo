@@ -37,7 +37,7 @@ class MemberServiceTest {
 
         @Test
         @DisplayName("성공")
-        void success() {
+        void createMember_validInput_success() {
             given(memberRepository.existsByEmail("test@test.com")).willReturn(false);
             given(memberRepository.existsByNickname("tester")).willReturn(false);
             given(memberRepository.save(any(Member.class))).willAnswer(invocation -> invocation.getArgument(0));
@@ -51,7 +51,7 @@ class MemberServiceTest {
 
         @Test
         @DisplayName("이메일 중복 시 실패")
-        void duplicateEmail() {
+        void createMember_duplicateEmail_throwsException() {
             given(memberRepository.existsByEmail("test@test.com")).willReturn(true);
 
             assertThatThrownBy(() -> memberService.createMember("test@test.com", "encoded", "tester"))
@@ -62,7 +62,7 @@ class MemberServiceTest {
 
         @Test
         @DisplayName("닉네임 중복 시 실패")
-        void duplicateNickname() {
+        void createMember_duplicateNickname_throwsException() {
             given(memberRepository.existsByEmail("test@test.com")).willReturn(false);
             given(memberRepository.existsByNickname("tester")).willReturn(true);
 
@@ -79,7 +79,7 @@ class MemberServiceTest {
 
         @Test
         @DisplayName("닉네임 변경 성공")
-        void updateNicknameSuccess() {
+        void updateProfile_validNickname_success() {
             Member member = Member.builder().email("test@test.com").password("encoded").nickname("oldNick").build();
             given(memberRepository.findById(1L)).willReturn(Optional.of(member));
             given(memberRepository.existsByNickname("newNick")).willReturn(false);
@@ -91,7 +91,7 @@ class MemberServiceTest {
 
         @Test
         @DisplayName("닉네임 중복 시 실패")
-        void updateNicknameDuplicate() {
+        void updateProfile_duplicateNickname_throwsException() {
             Member member = Member.builder().email("test@test.com").password("encoded").nickname("oldNick").build();
             given(memberRepository.findById(1L)).willReturn(Optional.of(member));
             given(memberRepository.existsByNickname("taken")).willReturn(true);
@@ -109,7 +109,7 @@ class MemberServiceTest {
 
         @Test
         @DisplayName("제재 성공 - WARNING")
-        void banWarning() {
+        void ban_warning_success() {
             Member member = Member.builder().email("bad@test.com").password("encoded").nickname("badUser").build();
             given(memberRepository.findById(1L)).willReturn(Optional.of(member));
 
@@ -121,7 +121,7 @@ class MemberServiceTest {
 
         @Test
         @DisplayName("제재 성공 - SUSPEND")
-        void banSuspend() {
+        void ban_suspend_success() {
             Member member = Member.builder().email("bad@test.com").password("encoded").nickname("badUser").build();
             given(memberRepository.findById(1L)).willReturn(Optional.of(member));
 
@@ -133,7 +133,7 @@ class MemberServiceTest {
 
         @Test
         @DisplayName("제재 성공 - BAN")
-        void banPermanent() {
+        void ban_permanent_success() {
             Member member = Member.builder().email("bad@test.com").password("encoded").nickname("badUser").build();
             given(memberRepository.findById(1L)).willReturn(Optional.of(member));
 
@@ -145,7 +145,7 @@ class MemberServiceTest {
 
         @Test
         @DisplayName("제재 실패 - ADMIN 계정")
-        void banAdmin() {
+        void ban_adminAccount_throwsException() {
             Member admin = Member.builder().email("admin@test.com").password("encoded").nickname("admin").build();
             setField(admin, "role", MemberRole.ADMIN);
             given(memberRepository.findById(1L)).willReturn(Optional.of(admin));
@@ -158,7 +158,7 @@ class MemberServiceTest {
 
         @Test
         @DisplayName("제재 해제 성공")
-        void unban() {
+        void unban_validMember_success() {
             Member member = Member.builder().email("bad@test.com").password("encoded").nickname("badUser").build();
             member.ban(BanType.SUSPEND, "위반", null);
             given(memberRepository.findById(1L)).willReturn(Optional.of(member));

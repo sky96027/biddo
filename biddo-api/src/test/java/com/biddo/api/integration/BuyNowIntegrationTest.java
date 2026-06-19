@@ -55,7 +55,7 @@ class BuyNowIntegrationTest extends IntegrationTestBase {
 
     @Test
     @DisplayName("즉시 구매 시 SOLD 전환 + 자동입찰 전체 비활성화 + 채팅방 생성")
-    void buyNow_fullPipeline() {
+    void buyNow_자동입찰과수동입찰존재시즉시구매_SOLD전환및자동입찰비활성화및채팅방생성() {
         // given
         Auction auction = createActiveAuction(seller, category, 10_000L, 100_000L);
         Long auctionId = auction.getId();
@@ -110,7 +110,7 @@ class BuyNowIntegrationTest extends IntegrationTestBase {
 
     @Test
     @DisplayName("즉시 구매 후 추가 입찰 불가")
-    void afterBuyNow_noBidsAllowed() {
+    void placeBid_즉시구매완료된경매에입찰_throwsException() {
         // given
         Auction auction = createActiveAuction(seller, category, 10_000L, 50_000L);
         Long auctionId = auction.getId();
@@ -127,7 +127,7 @@ class BuyNowIntegrationTest extends IntegrationTestBase {
 
     @Test
     @DisplayName("즉시구매가 미설정 경매에서 즉시 구매 시도 시 실패")
-    void buyNow_withoutBuyNowPrice_fails() {
+    void buyNow_즉시구매가미설정경매_throwsException() {
         // given: buyNowPrice = null
         Auction auction = createActiveAuction(seller, category, 10_000L, null);
 
@@ -140,7 +140,7 @@ class BuyNowIntegrationTest extends IntegrationTestBase {
 
     @Test
     @DisplayName("판매자 본인은 즉시 구매 불가")
-    void buyNow_selfPurchase_fails() {
+    void buyNow_판매자본인이즉시구매시도_throwsException() {
         // given
         Auction auction = createActiveAuction(seller, category, 10_000L, 50_000L);
 

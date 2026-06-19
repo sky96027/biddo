@@ -58,7 +58,7 @@ class AuthServiceTest {
 
         @Test
         @DisplayName("성공 — 비밀번호 인코딩 후 MemberService에 위임")
-        void success() {
+        void signup_validInput_success() {
             given(passwordEncoder.encode("rawPassword")).willReturn("encodedPassword");
             Member member = createMember();
             given(memberService.createMember("test@test.com", "encodedPassword", "tester")).willReturn(member);
@@ -76,7 +76,7 @@ class AuthServiceTest {
 
         @Test
         @DisplayName("성공 — 토큰 발급 및 Redis 저장")
-        void success() {
+        void login_validCredentials_returnsToken() {
             Member member = createMember();
             given(memberService.findByEmail("test@test.com")).willReturn(member);
             given(passwordEncoder.matches("rawPassword", "encodedPassword")).willReturn(true);
@@ -93,7 +93,7 @@ class AuthServiceTest {
 
         @Test
         @DisplayName("비밀번호 불일치 시 실패")
-        void wrongPassword() {
+        void login_wrongPassword_throwsException() {
             Member member = createMember();
             given(memberService.findByEmail("test@test.com")).willReturn(member);
             given(passwordEncoder.matches("wrong", "encodedPassword")).willReturn(false);
@@ -111,7 +111,7 @@ class AuthServiceTest {
 
         @Test
         @DisplayName("성공")
-        void success() {
+        void refresh_validToken_returnsNewToken() {
             given(jwtTokenProvider.validateToken("validRefresh")).willReturn(true);
             given(jwtTokenProvider.getMemberId("validRefresh")).willReturn(1L);
             given(refreshTokenRepository.findByMemberId(1L)).willReturn(Optional.of("validRefresh"));
@@ -129,7 +129,7 @@ class AuthServiceTest {
 
         @Test
         @DisplayName("유효하지 않은 토큰 시 실패")
-        void invalidToken() {
+        void refresh_invalidToken_throwsException() {
             given(jwtTokenProvider.validateToken("invalid")).willReturn(false);
 
             assertThatThrownBy(() -> authService.refresh("invalid"))
@@ -140,7 +140,7 @@ class AuthServiceTest {
 
         @Test
         @DisplayName("Redis 저장 토큰과 불일치 시 실패")
-        void tokenMismatch() {
+        void refresh_tokenMismatch_throwsException() {
             given(jwtTokenProvider.validateToken("stolenToken")).willReturn(true);
             given(jwtTokenProvider.getMemberId("stolenToken")).willReturn(1L);
             given(refreshTokenRepository.findByMemberId(1L)).willReturn(Optional.of("realToken"));
@@ -158,7 +158,7 @@ class AuthServiceTest {
 
         @Test
         @DisplayName("성공 — 비밀번호 변경 후 Refresh Token 삭제")
-        void success() {
+        void changePassword_validInput_success() {
             Member member = createMember();
             given(memberService.findById(1L)).willReturn(member);
             given(passwordEncoder.matches("current", "encodedPassword")).willReturn(true);
@@ -172,7 +172,7 @@ class AuthServiceTest {
 
         @Test
         @DisplayName("현재 비밀번호 불일치 시 실패")
-        void wrongCurrentPassword() {
+        void changePassword_wrongCurrent_throwsException() {
             Member member = createMember();
             given(memberService.findById(1L)).willReturn(member);
             given(passwordEncoder.matches("wrong", "encodedPassword")).willReturn(false);

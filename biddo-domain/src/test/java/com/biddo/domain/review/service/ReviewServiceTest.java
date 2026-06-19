@@ -70,7 +70,7 @@ class ReviewServiceTest {
 
     @Test
     @DisplayName("후기 작성 성공")
-    void create_success() {
+    void create_validInput_returnsSavedReview() {
         given(auctionRepository.findById(1L)).willReturn(Optional.of(endedAuction));
         given(reviewRepository.existsByAuctionIdAndReviewerId(1L, 2L)).willReturn(false);
         given(reviewRepository.save(any(Review.class))).willAnswer(inv -> {
@@ -89,7 +89,7 @@ class ReviewServiceTest {
 
     @Test
     @DisplayName("후기 작성 실패 - 낙찰자 아님")
-    void create_notWinner() {
+    void create_notWinner_throwsException() {
         given(auctionRepository.findById(1L)).willReturn(Optional.of(endedAuction));
 
         assertThatThrownBy(() -> reviewService.create(1L, 999L, 5, "내용"))
@@ -100,7 +100,7 @@ class ReviewServiceTest {
 
     @Test
     @DisplayName("후기 작성 실패 - 이미 작성됨")
-    void create_alreadyReviewed() {
+    void create_alreadyReviewed_throwsException() {
         given(auctionRepository.findById(1L)).willReturn(Optional.of(endedAuction));
         given(reviewRepository.existsByAuctionIdAndReviewerId(1L, 2L)).willReturn(true);
 
@@ -112,7 +112,7 @@ class ReviewServiceTest {
 
     @Test
     @DisplayName("후기 작성 실패 - 경매 미종료")
-    void create_auctionNotEnded() {
+    void create_auctionNotEnded_throwsException() {
         Auction activeAuction = Auction.builder()
                 .seller(seller).category(category)
                 .title("진행 중 경매").description("설명")
@@ -134,7 +134,7 @@ class ReviewServiceTest {
 
     @Test
     @DisplayName("후기 수정 성공")
-    void update_success() {
+    void update_validInput_returnsUpdatedReview() {
         Review review = Review.builder()
                 .auction(endedAuction).reviewer(buyer).reviewee(seller)
                 .rating(4).content("괜찮았습니다")
@@ -151,7 +151,7 @@ class ReviewServiceTest {
 
     @Test
     @DisplayName("후기 수정 실패 - 작성자 아님")
-    void update_notReviewer() {
+    void update_notReviewer_throwsException() {
         Review review = Review.builder()
                 .auction(endedAuction).reviewer(buyer).reviewee(seller)
                 .rating(4).content("내용")
@@ -168,7 +168,7 @@ class ReviewServiceTest {
 
     @Test
     @DisplayName("후기 삭제 성공")
-    void delete_success() {
+    void delete_validInput_deletesReview() {
         Review review = Review.builder()
                 .auction(endedAuction).reviewer(buyer).reviewee(seller)
                 .rating(4).content("내용")

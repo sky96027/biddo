@@ -34,7 +34,7 @@ class AuctionSearchAdapterTest {
 
     @Test
     @DisplayName("ES 장애 시 searchFallback이 DB 검색 결과를 반환한다")
-    void searchFallback_returnsDbResults() throws Exception {
+    void searchFallback_esConnectionFailed_returnsDbResults() throws Exception {
         // given
         AuctionSearchCondition condition = AuctionSearchCondition.builder()
                 .keyword("맥북")
@@ -64,7 +64,7 @@ class AuctionSearchAdapterTest {
 
     @Test
     @DisplayName("ES 장애 시 findSimilarFallback이 카테고리 기반 DB 결과를 반환한다")
-    void findSimilarFallback_returnsCategoryBasedResults() throws Exception {
+    void findSimilarFallback_esTimeout_returnsCategoryBasedResults() throws Exception {
         // given
         Long auctionId = 1L;
         int size = 5;
