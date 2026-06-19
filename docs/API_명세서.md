@@ -353,7 +353,7 @@ Presigned URL 방식으로 클라이언트가 S3에 직접 업로드합니다. �
 | 구분 | 내용 |
 | --- | --- |
 | 인증 | 필요 |
-| Request Body | `{ keyword, categoryId(선택), maxPrice(선택) }` |
+| Request Body | `{ keyword, categoryId(사용자 선택), maxPrice(사용자 선택) }` |
 | Response | `{ alertId, keyword, categoryId, maxPrice, isActive }` |
 
 ## `GET /api/v1/keyword-alerts` — 내 키워드 알림 목록

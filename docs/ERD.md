@@ -223,8 +223,8 @@ erDiagram
 | alert_id | BIGINT | PK, AUTO_INCREMENT | 알림 구독 ID |
 | member_id | BIGINT | FK → Member, NOT NULL | 회원 ID |
 | keyword | VARCHAR(100) | NOT NULL | 관심 키워드 |
-| category_id | BIGINT | FK → Category | 관심 카테고리 (선택) |
-| max_price | BIGINT |  | 최대 가격 (선택) |
+| category_id | BIGINT | FK → Category, NULLABLE | 관심 카테고리 |
+| max_price | BIGINT | NULLABLE | 최대 가격 |
 | is_active | BOOLEAN | DEFAULT TRUE | 활성 여부 |
 | created_at | TIMESTAMP | NOT NULL | 등록일 |
 
@@ -237,7 +237,7 @@ erDiagram
 | report_id | BIGINT | PK, AUTO_INCREMENT | 신고 ID |
 | reporter_id | BIGINT | FK → Member, NOT NULL | 신고자 ID |
 | reported_id | BIGINT | FK → Member, NOT NULL | 피신고자 ID |
-| auction_id | BIGINT | FK → Auction | 관련 경매 ID (선택) |
+| auction_id | BIGINT | FK → Auction, NULLABLE | 관련 경매 ID |
 | reason | VARCHAR(30) | NOT NULL | 신고 사유 (NO_TRADE, FAKE_PRODUCT, PRICE_MANIPULATION, FRAUD, OTHER) |
 | description | TEXT |  | 신고 상세 내용 |
 | status | VARCHAR(20) | DEFAULT 'PENDING' | 처리 상태 (PENDING, REVIEWED, RESOLVED, DISMISSED) |

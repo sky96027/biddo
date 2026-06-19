@@ -8,14 +8,13 @@ biddo-domain/src/main/java/com/biddo/domain/{도메인}/
 ├── repository/     # Spring Data JPA Repository
 ├── service/        # 비즈니스 로직
 ├── exception/      # ErrorCode enum, 커스텀 Exception
-└── dto/            # 도메인 내부 DTO (선택)
+└── dto/            # 도메인 내부 DTO (필요 시 — 예: 외부 시스템 연동 공통 계약)
 
 biddo-api/src/main/java/com/biddo/api/{도메인}/
 ├── controller/     # REST Controller
 ├── dto/
 │   ├── request/    # 요청 DTO
 │   └── response/   # 응답 DTO
-└── mapper/         # Entity ↔ DTO 변환 (선택)
 ```
 
 ## 수정 전 확인
