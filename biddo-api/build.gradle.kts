@@ -20,4 +20,6 @@ dependencies {
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
     testImplementation("org.testcontainers:kafka")
+    testImplementation("org.testcontainers:elasticsearch")
+    testImplementation("org.springframework.boot:spring-boot-starter-data-elasticsearch")
 }
