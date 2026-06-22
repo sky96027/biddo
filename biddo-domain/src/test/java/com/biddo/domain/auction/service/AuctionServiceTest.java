@@ -32,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -247,6 +248,66 @@ class AuctionServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(AuctionErrorCode.AUCTION_ALREADY_CANCELLED));
+    }
+
+    @Test
+    @DisplayName("경매 활성화 성공 - PENDING → ACTIVE")
+    void activateAuction_pendingAuction_success() {
+        Auction auction = createPendingAuction();
+        given(auctionRepository.findById(1L)).willReturn(Optional.of(auction));
+
+        auctionService.activateAuction(1L);
+
+        assertThat(auction.getStatus()).isEqualTo(AuctionStatus.ACTIVE);
+        verify(auctionRepository).save(auction);
+        verify(auctionLifecyclePort).scheduleEnd(1L, auction.getEndTime());
+        verify(auctionEventPublisher).publishAuctionActivated(auction);
+    }
+
+    @Test
+    @DisplayName("경매 활성화 무시 - 이미 ACTIVE 상태")
+    void activateAuction_alreadyActive_skipped() {
+        Auction auction = createActiveAuction();
+        given(auctionRepository.findById(1L)).willReturn(Optional.of(auction));
+
+        auctionService.activateAuction(1L);
+
+        verify(auctionRepository, never()).save(any());
+        verify(auctionEventPublisher, never()).publishAuctionActivated(any());
+    }
+
+    @Test
+    @DisplayName("경매 종료 성공 - ACTIVE → ENDED")
+    void endAuction_activeAuction_success() {
+        Auction auction = createActiveAuction();
+        given(auctionRepository.findById(1L)).willReturn(Optional.of(auction));
+
+        auctionService.endAuction(1L);
+
+        assertThat(auction.getStatus()).isEqualTo(AuctionStatus.ENDED);
+        verify(autoBidRepository).deactivateAllByAuctionId(1L);
+        verify(auctionRepository).save(auction);
+        verify(auctionEventPublisher).publishAuctionEnded(auction);
+    }
+
+    @Test
+    @DisplayName("경매 종료 중복 호출 무시 - 이미 ENDED 상태")
+    void endAuction_alreadyEnded_skipped() {
+        Auction auction = createActiveAuction();
+        auction.end();
+        given(auctionRepository.findById(1L)).willReturn(Optional.of(auction));
+
+        auctionService.endAuction(1L);
+
+        verify(autoBidRepository, never()).deactivateAllByAuctionId(any());
+        verify(auctionRepository, never()).save(any());
+        verify(auctionEventPublisher, never()).publishAuctionEnded(any());
+    }
+
+    private Auction createActiveAuction() {
+        Auction auction = createPendingAuction();
+        setField(auction, "status", AuctionStatus.ACTIVE);
+        return auction;
     }
 
     private Auction createPendingAuction() {

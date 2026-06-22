@@ -53,7 +53,6 @@
 | Messaging | EC2 (Kafka) | EC2에 직접 설치 |
 | Search | EC2 (Elasticsearch) | EC2에 직접 설치 |
 | Image Processing | Lambda@Edge | 이미지 리사이징/썸네일 생성 (CloudFront 연동) |
-| Container Registry | ECR | Docker 이미지 저장소 (선택) |
 | Secret Management | Secrets Manager | DB 비밀번호, API 키 등 보안 관리 |
 | Monitoring | CloudWatch | AWS 리소스 모니터링 및 로그 수집 |
 
@@ -172,4 +171,4 @@ flowchart TB
 
 [[claude.md] (AI 개발 가이드)](../claude.md)
 
-[이슈 트래킹](issue-tracking.md)
+[이슈 트래킹](https://github.com/sky96027/biddo/issues)

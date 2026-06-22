@@ -115,18 +115,18 @@ docker-compose up -d
 
 Swagger UI: `http://localhost:9090/swagger-ui/index.html`
 
-상세 API 명세는 [docs/API_명세서.md](docs/API_명세서.md)를 참고하세요.
+상세 API 명세는 [docs/spec/API_명세서.md](docs/spec/API_명세서.md)를 참고하세요.
 
 ## 설계 문서
 
 - [프로젝트 개요](docs/Biddo-중고_경매_시스템(Used_Auction_System).md)
-- [ERD](docs/ERD.md)
-- [API 명세서](docs/API_명세서.md)
-- [비즈니스 규칙 정의서](docs/비즈니스_규칙_정의서.md)
-- [시스템 아키텍처 & 시퀀스 다이어그램](docs/시스템_아키텍처&시퀀스_다이어그램.md)
-- [프로젝트 구조 & 코딩 컨벤션](docs/프로젝트_구조&코딩_컨벤션.md)
-- [요구사항 목록](docs/requirements.md)
-- [이슈 트래킹](docs/issue-tracking.md)
+- [ERD](docs/spec/ERD.md)
+- [API 명세서](docs/spec/API_명세서.md)
+- [비즈니스 규칙 정의서](docs/spec/비즈니스_규칙_정의서.md)
+- [시스템 아키텍처 & 시퀀스 다이어그램](docs/spec/시스템_아키텍처&시퀀스_다이어그램.md)
+- [프로젝트 구조 & 코딩 컨벤션](docs/spec/프로젝트_구조&코딩_컨벤션.md)
+- [요구사항 목록](docs/spec/requirements.md)
+- [이슈 트래킹](https://github.com/sky96027/biddo/issues)
 
 ## Git 컨벤션
 

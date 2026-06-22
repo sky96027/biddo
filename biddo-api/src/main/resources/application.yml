@@ -61,6 +61,19 @@ cloud:
 server:
   port: 9090
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
 resilience4j:
   circuitbreaker:
     instances:
