@@ -30,4 +30,6 @@ public interface AuctionRepository {
     List<Auction> findPendingAuctionsToActivate(LocalDateTime now);
 
     List<Auction> findActiveAuctionsToEnd(LocalDateTime now);
+
+    List<Auction> findSimilarByCategory(Long auctionId, int size);
 }
