@@ -147,7 +147,7 @@ public class BidService {
     @Transactional
     public void cancelAutoBid(Long auctionId, Long bidderId) {
         AutoBid autoBid = autoBidRepository.findByAuctionIdAndBidderId(auctionId, bidderId)
-                .orElseThrow(() -> new BusinessException(BidErrorCode.AUTO_BID_ALREADY_EXISTS));
+                .orElseThrow(() -> new BusinessException(BidErrorCode.AUTO_BID_NOT_FOUND));
         autoBid.deactivate();
     }
 

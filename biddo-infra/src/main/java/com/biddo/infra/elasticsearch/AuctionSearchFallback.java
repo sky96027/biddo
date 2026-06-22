@@ -3,11 +3,10 @@ package com.biddo.infra.elasticsearch;
 import com.biddo.domain.auction.model.Auction;
 import com.biddo.domain.search.dto.AuctionSearchCondition;
 import com.biddo.domain.search.dto.AuctionSearchResult;
-import com.biddo.infra.auction.AuctionJpaRepository;
+import com.biddo.domain.auction.port.out.AuctionRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -19,7 +18,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AuctionSearchFallback {
 
-    private final AuctionJpaRepository auctionJpaRepository;
+    private final AuctionRepository auctionRepository;
     private final EntityManager entityManager;
 
     public List<AuctionSearchResult> search(AuctionSearchCondition condition) {
@@ -83,8 +82,7 @@ public class AuctionSearchFallback {
     }
 
     public List<AuctionSearchResult> findSimilarByCategory(Long auctionId, int size) {
-        PageRequest pageRequest = PageRequest.of(0, size + 1);
-        List<Auction> auctions = auctionJpaRepository.findSimilarByCategory(auctionId, pageRequest);
+        List<Auction> auctions = auctionRepository.findSimilarByCategory(auctionId, size + 1);
         return auctions.stream()
                 .map(this::toSearchResult)
                 .toList();

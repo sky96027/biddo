@@ -14,7 +14,8 @@ public enum BidErrorCode implements ErrorCode {
     BUY_NOW_NOT_AVAILABLE(400, "BID_004", "즉시 구매가가 설정되지 않은 경매입니다."),
     AUTO_BID_MAX_TOO_LOW(400, "BID_005", "자동 입찰 최대 금액은 최소 입찰 금액 이상이어야 합니다."),
     AUTO_BID_ALREADY_EXISTS(409, "BID_006", "이미 자동 입찰이 설정되어 있습니다."),
-    AUCTION_LOCK_FAILED(409, "BID_007", "다른 입찰이 처리 중입니다. 잠시 후 다시 시도해주세요.");
+    AUCTION_LOCK_FAILED(409, "BID_007", "다른 입찰이 처리 중입니다. 잠시 후 다시 시도해주세요."),
+    AUTO_BID_NOT_FOUND(404, "BID_008", "자동 입찰 설정을 찾을 수 없습니다.");
 
     private final int status;
     private final String code;

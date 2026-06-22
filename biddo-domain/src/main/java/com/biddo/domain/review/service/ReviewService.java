@@ -82,7 +82,7 @@ public class ReviewService {
     }
 
     private Review findReviewById(Long reviewId) {
-        return reviewRepository.findById(reviewId)
+        return reviewRepository.findByIdWithAuction(reviewId)
                 .orElseThrow(() -> new BusinessException(ReviewErrorCode.REVIEW_NOT_FOUND));
     }
 
