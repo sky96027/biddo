@@ -141,7 +141,7 @@ class ReviewServiceTest {
                 .build();
         setId(review, 1L);
 
-        given(reviewRepository.findById(1L)).willReturn(Optional.of(review));
+        given(reviewRepository.findByIdWithAuction(1L)).willReturn(Optional.of(review));
 
         Review result = reviewService.update(1L, 2L, 5, "최고였습니다");
 
@@ -158,7 +158,7 @@ class ReviewServiceTest {
                 .build();
         setId(review, 1L);
 
-        given(reviewRepository.findById(1L)).willReturn(Optional.of(review));
+        given(reviewRepository.findByIdWithAuction(1L)).willReturn(Optional.of(review));
 
         assertThatThrownBy(() -> reviewService.update(1L, 999L, 5, "수정"))
                 .isInstanceOf(BusinessException.class)
@@ -175,7 +175,7 @@ class ReviewServiceTest {
                 .build();
         setId(review, 1L);
 
-        given(reviewRepository.findById(1L)).willReturn(Optional.of(review));
+        given(reviewRepository.findByIdWithAuction(1L)).willReturn(Optional.of(review));
 
         reviewService.delete(1L, 2L);
 

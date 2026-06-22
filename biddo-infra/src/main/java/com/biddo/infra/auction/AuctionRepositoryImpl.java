@@ -88,4 +88,10 @@ public class AuctionRepositoryImpl implements AuctionRepository {
     public List<Auction> findActiveAuctionsToEnd(LocalDateTime now) {
         return auctionJpaRepository.findActiveAuctionsToEnd(now);
     }
+
+    @Override
+    public List<Auction> findSimilarByCategory(Long auctionId, int size) {
+        PageRequest pageRequest = PageRequest.of(0, size);
+        return auctionJpaRepository.findSimilarByCategory(auctionId, pageRequest);
+    }
 }

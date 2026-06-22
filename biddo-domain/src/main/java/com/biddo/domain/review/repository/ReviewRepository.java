@@ -25,4 +25,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     Optional<Double> findAverageRatingByRevieweeId(@Param("revieweeId") Long revieweeId);
 
     long countByRevieweeId(Long revieweeId);
+
+    @Query("SELECT r FROM Review r JOIN FETCH r.auction WHERE r.id = :id")
+    Optional<Review> findByIdWithAuction(@Param("id") Long id);
 }
