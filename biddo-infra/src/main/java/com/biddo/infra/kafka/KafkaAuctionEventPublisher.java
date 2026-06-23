@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
 
@@ -59,7 +61,7 @@ public class KafkaAuctionEventPublisher implements AuctionEventPublisher {
                 .build();
 
         String key = String.valueOf(auction.getId());
-        kafkaTemplate.send(KafkaConfig.AUCTION_EVENTS, key, event)
+        Runnable sendAction = () -> kafkaTemplate.send(KafkaConfig.AUCTION_EVENTS, key, event)
                 .whenComplete((result, ex) -> {
                     if (ex != null) {
                         log.error("Failed to publish {} event: auctionId={}",
@@ -70,5 +72,16 @@ public class KafkaAuctionEventPublisher implements AuctionEventPublisher {
                                 result.getRecordMetadata().partition());
                     }
                 });
+
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    sendAction.run();
+                }
+            });
+        } else {
+            sendAction.run();
+        }
     }
 }
