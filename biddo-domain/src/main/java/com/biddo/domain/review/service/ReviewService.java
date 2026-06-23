@@ -1,9 +1,8 @@
 package com.biddo.domain.review.service;
 
-import com.biddo.domain.auction.exception.AuctionNotFoundException;
 import com.biddo.domain.auction.model.Auction;
 import com.biddo.domain.auction.model.AuctionStatus;
-import com.biddo.domain.auction.port.out.AuctionRepository;
+import com.biddo.domain.auction.service.AuctionService;
 import com.biddo.domain.common.exception.BusinessException;
 import com.biddo.domain.member.entity.Member;
 import com.biddo.domain.review.entity.Review;
@@ -25,12 +24,11 @@ public class ReviewService {
     private static final int REVIEW_PERIOD_DAYS = 14;
 
     private final ReviewRepository reviewRepository;
-    private final AuctionRepository auctionRepository;
+    private final AuctionService auctionService;
 
     @Transactional
     public Review create(Long auctionId, Long reviewerId, int rating, String content) {
-        Auction auction = auctionRepository.findById(auctionId)
-                .orElseThrow(AuctionNotFoundException::new);
+        Auction auction = auctionService.findAuctionById(auctionId);
 
         validateAuctionEnded(auction);
         validateReviewPeriod(auction);

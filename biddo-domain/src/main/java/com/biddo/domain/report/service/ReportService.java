@@ -1,7 +1,7 @@
 package com.biddo.domain.report.service;
 
 import com.biddo.domain.auction.model.Auction;
-import com.biddo.domain.auction.port.out.AuctionRepository;
+import com.biddo.domain.auction.service.AuctionService;
 import com.biddo.domain.common.exception.BusinessException;
 import com.biddo.domain.member.entity.Member;
 import com.biddo.domain.member.exception.MemberErrorCode;
@@ -25,7 +25,7 @@ public class ReportService {
 
     private final ReportRepository reportRepository;
     private final MemberRepository memberRepository;
-    private final AuctionRepository auctionRepository;
+    private final AuctionService auctionService;
 
     @Transactional
     public Report create(Long reporterId, Long reportedId, Long auctionId,
@@ -39,10 +39,9 @@ public class ReportService {
         Member reported = memberRepository.findById(reportedId)
                 .orElseThrow(() -> new BusinessException(MemberErrorCode.MEMBER_NOT_FOUND));
 
-        Auction auction = null;
-        if (auctionId != null) {
-            auction = auctionRepository.findById(auctionId).orElse(null);
-        }
+        Auction auction = auctionId != null
+                ? auctionService.findByIdOptional(auctionId).orElse(null)
+                : null;
 
         Report report = Report.builder()
                 .reporter(reporter)

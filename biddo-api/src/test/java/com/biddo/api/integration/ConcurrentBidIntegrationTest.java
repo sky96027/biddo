@@ -45,9 +45,19 @@ class ConcurrentBidIntegrationTest extends IntegrationTestBase {
 
     @BeforeEach
     void setUp() {
-        jdbcTemplate.execute("TRUNCATE TABLE bid, auto_bid, chat_message, chat_room, " +
-                "auction_image, auction, notification, price_alert, keyword_alert, " +
-                "review, report, member, category CASCADE");
+        jdbcTemplate.execute("DELETE FROM bid");
+        jdbcTemplate.execute("DELETE FROM auto_bid");
+        jdbcTemplate.execute("DELETE FROM chat_message");
+        jdbcTemplate.execute("DELETE FROM chat_room");
+        jdbcTemplate.execute("DELETE FROM review");
+        jdbcTemplate.execute("DELETE FROM report");
+        jdbcTemplate.execute("DELETE FROM notification");
+        jdbcTemplate.execute("DELETE FROM price_alert");
+        jdbcTemplate.execute("DELETE FROM keyword_alert");
+        jdbcTemplate.execute("DELETE FROM auction_image");
+        jdbcTemplate.execute("DELETE FROM auction");
+        jdbcTemplate.execute("DELETE FROM member");
+        jdbcTemplate.execute("DELETE FROM category");
         seller = createMember("seller@test.com", "판매자");
         category = createCategory("전자기기");
     }

@@ -2,7 +2,7 @@ package com.biddo.domain.notification.service;
 
 import com.biddo.domain.common.exception.BusinessException;
 import com.biddo.domain.member.entity.Member;
-import com.biddo.domain.member.repository.MemberRepository;
+import com.biddo.domain.member.service.MemberService;
 import com.biddo.domain.notification.entity.PriceAlert;
 import com.biddo.domain.notification.exception.NotificationErrorCode;
 import com.biddo.domain.notification.repository.PriceAlertRepository;
@@ -33,7 +33,7 @@ class PriceAlertServiceTest {
     private PriceAlertRepository priceAlertRepository;
 
     @Mock
-    private MemberRepository memberRepository;
+    private MemberService memberService;
 
     private Member member;
     private PriceAlert priceAlert;
@@ -56,7 +56,7 @@ class PriceAlertServiceTest {
     @DisplayName("가격 알림 생성 성공")
     void create_success() {
         given(priceAlertRepository.existsByMemberIdAndAuctionId(1L, 100L)).willReturn(false);
-        given(memberRepository.findById(1L)).willReturn(Optional.of(member));
+        given(memberService.findById(1L)).willReturn(member);
         given(priceAlertRepository.save(any(PriceAlert.class))).willAnswer(inv -> {
             PriceAlert pa = inv.getArgument(0);
             setId(pa, 1L);

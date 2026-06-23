@@ -4,7 +4,6 @@ import com.biddo.domain.auction.model.Auction;
 import com.biddo.domain.auction.model.AuctionStatus;
 import com.biddo.domain.auction.model.ItemCondition;
 import com.biddo.domain.auction.port.out.AuctionLifecyclePort;
-import com.biddo.domain.auction.port.out.AuctionRepository;
 import com.biddo.domain.auction.service.AuctionService;
 import com.biddo.domain.bid.exception.BidErrorCode;
 import com.biddo.domain.bid.model.AutoBid;
@@ -17,7 +16,7 @@ import com.biddo.domain.bid.port.out.BidRepository;
 import com.biddo.domain.category.entity.Category;
 import com.biddo.domain.common.exception.BusinessException;
 import com.biddo.domain.member.entity.Member;
-import com.biddo.domain.member.repository.MemberRepository;
+import com.biddo.domain.member.service.MemberService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -54,10 +53,7 @@ class BidServiceTest {
     private AutoBidRepository autoBidRepository;
 
     @Mock
-    private AuctionRepository auctionRepository;
-
-    @Mock
-    private MemberRepository memberRepository;
+    private MemberService memberService;
 
     @Mock
     private BidEventPublisher bidEventPublisher;
@@ -132,14 +128,14 @@ class BidServiceTest {
         @DisplayName("입찰 성공")
         void placeBid_validBid_success() {
             long bidAmount = 515_000L;
-            given(auctionRepository.findById(1L)).willReturn(Optional.of(auction));
-            given(memberRepository.findById(2L)).willReturn(Optional.of(bidder));
+            given(auctionService.findAuctionById(1L)).willReturn(auction);
+            given(memberService.findById(2L)).willReturn(bidder);
             given(bidRepository.save(any(Bid.class))).willAnswer(inv -> {
                 Bid bid = inv.getArgument(0);
                 setId(bid, 1L);
                 return bid;
             });
-            given(auctionRepository.save(any(Auction.class))).willReturn(auction);
+
             given(autoBidRepository.findActiveByAuctionIdExcludingBidder(anyLong(), anyLong()))
                     .willReturn(Collections.emptyList());
 
@@ -157,8 +153,8 @@ class BidServiceTest {
         @DisplayName("입찰 실패 - 경매 ACTIVE 아님")
         void placeBid_notActive_throwsException() {
             Auction pendingAuction = createPendingAuction();
-            given(auctionRepository.findById(1L)).willReturn(Optional.of(pendingAuction));
-            given(memberRepository.findById(2L)).willReturn(Optional.of(bidder));
+            given(auctionService.findAuctionById(1L)).willReturn(pendingAuction);
+            given(memberService.findById(2L)).willReturn(bidder);
 
             assertThatThrownBy(() -> bidService.placeBid(1L, 2L, 515_000L))
                     .isInstanceOf(BusinessException.class)
@@ -169,8 +165,8 @@ class BidServiceTest {
         @Test
         @DisplayName("입찰 실패 - 본인 경매")
         void placeBid_selfBid_throwsException() {
-            given(auctionRepository.findById(1L)).willReturn(Optional.of(auction));
-            given(memberRepository.findById(1L)).willReturn(Optional.of(seller));
+            given(auctionService.findAuctionById(1L)).willReturn(auction);
+            given(memberService.findById(1L)).willReturn(seller);
 
             assertThatThrownBy(() -> bidService.placeBid(1L, 1L, 515_000L))
                     .isInstanceOf(BusinessException.class)
@@ -181,8 +177,8 @@ class BidServiceTest {
         @Test
         @DisplayName("입찰 실패 - 금액 부족")
         void placeBid_amountTooLow_throwsException() {
-            given(auctionRepository.findById(1L)).willReturn(Optional.of(auction));
-            given(memberRepository.findById(2L)).willReturn(Optional.of(bidder));
+            given(auctionService.findAuctionById(1L)).willReturn(auction);
+            given(memberService.findById(2L)).willReturn(bidder);
 
             assertThatThrownBy(() -> bidService.placeBid(1L, 2L, 510_000L))
                     .isInstanceOf(BusinessException.class)
@@ -199,14 +195,14 @@ class BidServiceTest {
         @DisplayName("즉시 구매 성공")
         void buyNow_validAuction_success() {
             Auction auctionWithBuyNow = createActiveAuction(500_000L, 1_000_000L);
-            given(auctionRepository.findById(1L)).willReturn(Optional.of(auctionWithBuyNow));
-            given(memberRepository.findById(2L)).willReturn(Optional.of(bidder));
+            given(auctionService.findAuctionById(1L)).willReturn(auctionWithBuyNow);
+            given(memberService.findById(2L)).willReturn(bidder);
             given(bidRepository.save(any(Bid.class))).willAnswer(inv -> {
                 Bid bid = inv.getArgument(0);
                 setId(bid, 1L);
                 return bid;
             });
-            given(auctionRepository.save(any(Auction.class))).willReturn(auctionWithBuyNow);
+
 
             Bid result = bidService.buyNow(1L, 2L);
 
@@ -219,8 +215,8 @@ class BidServiceTest {
         @Test
         @DisplayName("즉시 구매 실패 - 즉시구매가 미설정")
         void buyNow_noBuyNowPrice_throwsException() {
-            given(auctionRepository.findById(1L)).willReturn(Optional.of(auction));
-            given(memberRepository.findById(2L)).willReturn(Optional.of(bidder));
+            given(auctionService.findAuctionById(1L)).willReturn(auction);
+            given(memberService.findById(2L)).willReturn(bidder);
 
             assertThatThrownBy(() -> bidService.buyNow(1L, 2L))
                     .isInstanceOf(BusinessException.class)
@@ -236,8 +232,8 @@ class BidServiceTest {
         @Test
         @DisplayName("자동 입찰 설정 성공")
         void setAutoBid_newSetting_success() {
-            given(auctionRepository.findById(1L)).willReturn(Optional.of(auction));
-            given(memberRepository.findById(2L)).willReturn(Optional.of(bidder));
+            given(auctionService.findAuctionById(1L)).willReturn(auction);
+            given(memberService.findById(2L)).willReturn(bidder);
             given(autoBidRepository.findByAuctionIdAndBidderId(1L, 2L)).willReturn(Optional.empty());
             given(autoBidRepository.save(any(AutoBid.class))).willAnswer(inv -> {
                 AutoBid ab = inv.getArgument(0);
@@ -261,8 +257,8 @@ class BidServiceTest {
                     .build();
             setId(existingAutoBid, 1L);
 
-            given(auctionRepository.findById(1L)).willReturn(Optional.of(auction));
-            given(memberRepository.findById(2L)).willReturn(Optional.of(bidder));
+            given(auctionService.findAuctionById(1L)).willReturn(auction);
+            given(memberService.findById(2L)).willReturn(bidder);
             given(autoBidRepository.findByAuctionIdAndBidderId(1L, 2L)).willReturn(Optional.of(existingAutoBid));
             given(autoBidRepository.save(existingAutoBid)).willReturn(existingAutoBid);
 
@@ -274,8 +270,8 @@ class BidServiceTest {
         @Test
         @DisplayName("자동 입찰 실패 - 최대 금액 부족")
         void setAutoBid_maxTooLow_throwsException() {
-            given(auctionRepository.findById(1L)).willReturn(Optional.of(auction));
-            given(memberRepository.findById(2L)).willReturn(Optional.of(bidder));
+            given(auctionService.findAuctionById(1L)).willReturn(auction);
+            given(memberService.findById(2L)).willReturn(bidder);
 
             assertThatThrownBy(() -> bidService.setAutoBid(1L, 2L, 510_000L))
                     .isInstanceOf(BusinessException.class)
@@ -358,14 +354,14 @@ class BidServiceTest {
         @DisplayName("종료 10분 전 입찰 시 연장")
         void placeBid_lastTenMinutes_extendsEndTime() {
             Auction snipingAuction = createActiveAuctionEndingSoon();
-            given(auctionRepository.findById(1L)).willReturn(Optional.of(snipingAuction));
-            given(memberRepository.findById(2L)).willReturn(Optional.of(bidder));
+            given(auctionService.findAuctionById(1L)).willReturn(snipingAuction);
+            given(memberService.findById(2L)).willReturn(bidder);
             given(bidRepository.save(any(Bid.class))).willAnswer(inv -> {
                 Bid bid = inv.getArgument(0);
                 setId(bid, 1L);
                 return bid;
             });
-            given(auctionRepository.save(any(Auction.class))).willReturn(snipingAuction);
+
             given(autoBidRepository.findActiveByAuctionIdExcludingBidder(anyLong(), anyLong()))
                     .willReturn(Collections.emptyList());
 
@@ -390,14 +386,14 @@ class BidServiceTest {
                     .build();
             setId(autoBid, 1L);
 
-            given(auctionRepository.findById(1L)).willReturn(Optional.of(auction));
-            given(memberRepository.findById(2L)).willReturn(Optional.of(bidder));
+            given(auctionService.findAuctionById(1L)).willReturn(auction);
+            given(memberService.findById(2L)).willReturn(bidder);
             given(bidRepository.save(any(Bid.class))).willAnswer(inv -> {
                 Bid bid = inv.getArgument(0);
                 setId(bid, System.nanoTime());
                 return bid;
             });
-            given(auctionRepository.save(any(Auction.class))).willReturn(auction);
+
 
             given(autoBidRepository.findActiveByAuctionIdExcludingBidder(anyLong(), anyLong()))
                     .willReturn(List.of(autoBid))

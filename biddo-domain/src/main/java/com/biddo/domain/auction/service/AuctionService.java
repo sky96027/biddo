@@ -15,8 +15,7 @@ import com.biddo.domain.category.entity.Category;
 import com.biddo.domain.category.repository.CategoryRepository;
 import com.biddo.domain.common.exception.BusinessException;
 import com.biddo.domain.member.entity.Member;
-import com.biddo.domain.member.exception.MemberErrorCode;
-import com.biddo.domain.member.repository.MemberRepository;
+import com.biddo.domain.member.service.MemberService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.IntStream;
 
 @Slf4j
@@ -34,7 +34,7 @@ import java.util.stream.IntStream;
 public class AuctionService {
 
     private final AuctionRepository auctionRepository;
-    private final MemberRepository memberRepository;
+    private final MemberService memberService;
     private final CategoryRepository categoryRepository;
     private final AuctionEventPublisher auctionEventPublisher;
     private final AuctionLifecyclePort auctionLifecyclePort;
@@ -45,8 +45,7 @@ public class AuctionService {
     public Auction create(Long sellerId, Long categoryId, String title, String description,
                           ItemCondition condition, Long startingPrice, Long buyNowPrice,
                           LocalDateTime startTime, LocalDateTime endTime, List<String> imageUrls) {
-        Member seller = memberRepository.findById(sellerId)
-                .orElseThrow(() -> new BusinessException(MemberErrorCode.MEMBER_NOT_FOUND));
+        Member seller = memberService.findById(sellerId);
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new BusinessException(AuctionErrorCode.CATEGORY_NOT_FOUND));
 
@@ -182,14 +181,24 @@ public class AuctionService {
                 auction.getId(), buyer.getId(), auction.getBuyNowPrice());
     }
 
+    @Transactional
+    public void applyBid(Auction auction, Long bidAmount, Member bidder) {
+        auction.applyBid(bidAmount, bidder);
+        auctionRepository.save(auction);
+    }
+
     public Auction findById(Long auctionId) {
         return auctionRepository.findByIdWithImages(auctionId)
                 .orElseThrow(AuctionNotFoundException::new);
     }
 
-    private Auction findAuctionById(Long auctionId) {
+    public Auction findAuctionById(Long auctionId) {
         return auctionRepository.findById(auctionId)
                 .orElseThrow(AuctionNotFoundException::new);
+    }
+
+    public Optional<Auction> findByIdOptional(Long auctionId) {
+        return auctionRepository.findById(auctionId);
     }
 
     private void validateSeller(Auction auction, Long memberId) {
