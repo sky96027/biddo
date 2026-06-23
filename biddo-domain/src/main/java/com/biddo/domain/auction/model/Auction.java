@@ -2,7 +2,7 @@ package com.biddo.domain.auction.model;
 
 import com.biddo.domain.auction.exception.AuctionErrorCode;
 import com.biddo.domain.category.entity.Category;
-import com.biddo.domain.common.entity.BaseTimeEntity;
+import com.biddo.domain.common.entity.BaseModifiedTimeEntity;
 import com.biddo.domain.common.exception.BusinessException;
 import com.biddo.domain.member.entity.Member;
 import jakarta.persistence.*;
@@ -24,7 +24,7 @@ import java.util.List;
 })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Auction extends BaseTimeEntity {
+public class Auction extends BaseModifiedTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

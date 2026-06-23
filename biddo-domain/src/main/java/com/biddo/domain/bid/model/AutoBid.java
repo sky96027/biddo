@@ -1,7 +1,7 @@
 package com.biddo.domain.bid.model;
 
 import com.biddo.domain.auction.model.Auction;
-import com.biddo.domain.common.entity.BaseTimeEntity;
+import com.biddo.domain.common.entity.BaseModifiedTimeEntity;
 import com.biddo.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class AutoBid extends BaseTimeEntity {
+public class AutoBid extends BaseModifiedTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
