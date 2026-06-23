@@ -63,6 +63,7 @@ class AuctionServiceTest {
     private ChatService chatService;
 
     private Member seller;
+    private Member buyer;
     private Category category;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
@@ -75,6 +76,13 @@ class AuctionServiceTest {
                 .nickname("seller")
                 .build();
         setId(seller, 1L);
+
+        buyer = Member.builder()
+                .email("buyer@test.com")
+                .password("encoded")
+                .nickname("buyer")
+                .build();
+        setId(buyer, 2L);
 
         category = Category.builder()
                 .name("스마트폰")
@@ -304,8 +312,40 @@ class AuctionServiceTest {
         verify(auctionEventPublisher, never()).publishAuctionEnded(any());
     }
 
+    @Test
+    @DisplayName("즉시구매 완료 - 경매 상태 SOLD 전이 및 후속 처리")
+    void completeBuyNow_activeAuction_success() {
+        Auction auction = createActiveAuctionWithBuyNow();
+
+        auctionService.completeBuyNow(auction, buyer);
+
+        assertThat(auction.getStatus()).isEqualTo(AuctionStatus.SOLD);
+        assertThat(auction.getWinner()).isEqualTo(buyer);
+        verify(autoBidRepository).deactivateAllByAuctionId(1L);
+        verify(auctionLifecyclePort).cancelSchedule(1L);
+        verify(chatService).createRoom(auction);
+        verify(auctionEventPublisher).publishAuctionSold(auction);
+    }
+
     private Auction createActiveAuction() {
         Auction auction = createPendingAuction();
+        setField(auction, "status", AuctionStatus.ACTIVE);
+        return auction;
+    }
+
+    private Auction createActiveAuctionWithBuyNow() {
+        Auction auction = Auction.builder()
+                .seller(seller)
+                .category(category)
+                .title("테스트 경매")
+                .description("테스트 설명")
+                .condition(ItemCondition.LIKE_NEW)
+                .startingPrice(500000L)
+                .buyNowPrice(1_000_000L)
+                .startTime(LocalDateTime.now().minusHours(1))
+                .endTime(LocalDateTime.now().plusDays(3))
+                .build();
+        setId(auction, 1L);
         setField(auction, "status", AuctionStatus.ACTIVE);
         return auction;
     }

@@ -171,6 +171,17 @@ public class AuctionService {
                 auction.getCurrentPrice());
     }
 
+    @Transactional
+    public void completeBuyNow(Auction auction, Member buyer) {
+        auction.sell(buyer);
+        autoBidRepository.deactivateAllByAuctionId(auction.getId());
+        auctionLifecyclePort.cancelSchedule(auction.getId());
+        chatService.createRoom(auction);
+        auctionEventPublisher.publishAuctionSold(auction);
+        log.info("즉시구매 완료: auctionId={}, buyerId={}, price={}",
+                auction.getId(), buyer.getId(), auction.getBuyNowPrice());
+    }
+
     public Auction findById(Long auctionId) {
         return auctionRepository.findByIdWithImages(auctionId)
                 .orElseThrow(AuctionNotFoundException::new);
