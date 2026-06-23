@@ -2,8 +2,7 @@ package com.biddo.domain.notification.service;
 
 import com.biddo.domain.common.exception.BusinessException;
 import com.biddo.domain.member.entity.Member;
-import com.biddo.domain.member.exception.MemberErrorCode;
-import com.biddo.domain.member.repository.MemberRepository;
+import com.biddo.domain.member.service.MemberService;
 import com.biddo.domain.notification.entity.PriceAlert;
 import com.biddo.domain.notification.exception.NotificationErrorCode;
 import com.biddo.domain.notification.repository.PriceAlertRepository;
@@ -19,7 +18,7 @@ import java.util.List;
 public class PriceAlertService {
 
     private final PriceAlertRepository priceAlertRepository;
-    private final MemberRepository memberRepository;
+    private final MemberService memberService;
 
     @Transactional
     public PriceAlert create(Long memberId, Long auctionId, int thresholdPercent, Long currentPrice) {
@@ -27,8 +26,7 @@ public class PriceAlertService {
             throw new BusinessException(NotificationErrorCode.PRICE_ALERT_DUPLICATE);
         }
 
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new BusinessException(MemberErrorCode.MEMBER_NOT_FOUND));
+        Member member = memberService.findById(memberId);
 
         PriceAlert alert = PriceAlert.builder()
                 .member(member)
