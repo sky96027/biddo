@@ -1,10 +1,8 @@
 package com.biddo.domain.bid.service;
 
-import com.biddo.domain.auction.exception.AuctionNotFoundException;
 import com.biddo.domain.auction.model.Auction;
 import com.biddo.domain.auction.model.AuctionStatus;
 import com.biddo.domain.auction.port.out.AuctionLifecyclePort;
-import com.biddo.domain.auction.port.out.AuctionRepository;
 import com.biddo.domain.auction.service.AuctionService;
 import com.biddo.domain.bid.exception.BidErrorCode;
 import com.biddo.domain.bid.model.AutoBid;
@@ -16,8 +14,7 @@ import com.biddo.domain.bid.port.out.BidEventPublisher;
 import com.biddo.domain.bid.port.out.BidRepository;
 import com.biddo.domain.common.exception.BusinessException;
 import com.biddo.domain.member.entity.Member;
-import com.biddo.domain.member.exception.MemberErrorCode;
-import com.biddo.domain.member.repository.MemberRepository;
+import com.biddo.domain.member.service.MemberService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -38,11 +35,10 @@ public class BidService {
 
     private final BidRepository bidRepository;
     private final AutoBidRepository autoBidRepository;
-    private final AuctionRepository auctionRepository;
-    private final MemberRepository memberRepository;
     private final BidEventPublisher bidEventPublisher;
     private final AuctionLifecyclePort auctionLifecyclePort;
     private final AuctionService auctionService;
+    private final MemberService memberService;
     private final AuctionLockPort auctionLockPort;
     private final TransactionTemplate transactionTemplate;
 
@@ -74,8 +70,8 @@ public class BidService {
     }
 
     private Bid placeBidInternal(Long auctionId, Long bidderId, Long bidAmount) {
-        Auction auction = getAuction(auctionId);
-        Member bidder = getMember(bidderId);
+        Auction auction = auctionService.findAuctionById(auctionId);
+        Member bidder = memberService.findById(bidderId);
 
         validateActive(auction);
         validateNotSeller(auction, bidderId);
@@ -93,8 +89,8 @@ public class BidService {
     }
 
     private Bid buyNowInternal(Long auctionId, Long bidderId) {
-        Auction auction = getAuction(auctionId);
-        Member bidder = getMember(bidderId);
+        Auction auction = auctionService.findAuctionById(auctionId);
+        Member bidder = memberService.findById(bidderId);
 
         validateActive(auction);
         validateNotSeller(auction, bidderId);
@@ -111,8 +107,8 @@ public class BidService {
     }
 
     private AutoBid setAutoBidInternal(Long auctionId, Long bidderId, Long maxAmount) {
-        Auction auction = getAuction(auctionId);
-        Member bidder = getMember(bidderId);
+        Auction auction = auctionService.findAuctionById(auctionId);
+        Member bidder = memberService.findById(bidderId);
 
         validateActive(auction);
         validateNotSeller(auction, bidderId);
@@ -178,8 +174,7 @@ public class BidService {
                 .build();
         bid = bidRepository.save(bid);
 
-        auction.applyBid(bidAmount, bidder);
-        auctionRepository.save(auction);
+        auctionService.applyBid(auction, bidAmount, bidder);
 
         return bid;
     }
@@ -237,16 +232,6 @@ public class BidService {
             auction.extendEndTime(newEndTime);
             auctionLifecyclePort.scheduleEnd(auction.getId(), newEndTime);
         }
-    }
-
-    private Auction getAuction(Long auctionId) {
-        return auctionRepository.findById(auctionId)
-                .orElseThrow(AuctionNotFoundException::new);
-    }
-
-    private Member getMember(Long memberId) {
-        return memberRepository.findById(memberId)
-                .orElseThrow(() -> new BusinessException(MemberErrorCode.MEMBER_NOT_FOUND));
     }
 
     private void validateActive(Auction auction) {
