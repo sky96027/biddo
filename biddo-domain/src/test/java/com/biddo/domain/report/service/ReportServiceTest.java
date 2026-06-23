@@ -79,8 +79,8 @@ class ReportServiceTest {
     }
 
     @Test
-    @DisplayName("신고 상태 변경 성공")
-    void updateStatus_validInput_returnsUpdatedReport() {
+    @DisplayName("신고 상태 변경 성공 - PENDING → REVIEWED")
+    void updateStatus_pendingToReviewed_returnsUpdatedReport() {
         Report report = Report.builder()
                 .reporter(reporter).reported(reported)
                 .reason(ReportReason.NO_TRADE).description("거래 거부")
@@ -89,10 +89,64 @@ class ReportServiceTest {
 
         given(reportRepository.findById(1L)).willReturn(Optional.of(report));
 
+        Report result = reportService.updateStatus(1L, ReportStatus.REVIEWED, "검토 중");
+
+        assertThat(result.getStatus()).isEqualTo(ReportStatus.REVIEWED);
+        assertThat(result.getAdminNote()).isEqualTo("검토 중");
+    }
+
+    @Test
+    @DisplayName("신고 상태 변경 성공 - REVIEWED → RESOLVED")
+    void updateStatus_reviewedToResolved_returnsUpdatedReport() {
+        Report report = Report.builder()
+                .reporter(reporter).reported(reported)
+                .reason(ReportReason.NO_TRADE).description("거래 거부")
+                .build();
+        setId(report, 1L);
+        report.updateStatus(ReportStatus.REVIEWED, "검토 중");
+
+        given(reportRepository.findById(1L)).willReturn(Optional.of(report));
+
         Report result = reportService.updateStatus(1L, ReportStatus.RESOLVED, "처리 완료");
 
         assertThat(result.getStatus()).isEqualTo(ReportStatus.RESOLVED);
         assertThat(result.getAdminNote()).isEqualTo("처리 완료");
+    }
+
+    @Test
+    @DisplayName("신고 상태 변경 실패 - 유효하지 않은 전이 (PENDING → RESOLVED)")
+    void updateStatus_invalidTransition_throwsException() {
+        Report report = Report.builder()
+                .reporter(reporter).reported(reported)
+                .reason(ReportReason.NO_TRADE).description("거래 거부")
+                .build();
+        setId(report, 1L);
+
+        given(reportRepository.findById(1L)).willReturn(Optional.of(report));
+
+        assertThatThrownBy(() -> reportService.updateStatus(1L, ReportStatus.RESOLVED, "처리 완료"))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ReportErrorCode.INVALID_STATUS_TRANSITION));
+    }
+
+    @Test
+    @DisplayName("신고 상태 변경 실패 - 최종 상태에서 전이 불가 (RESOLVED → PENDING)")
+    void updateStatus_fromFinalStatus_throwsException() {
+        Report report = Report.builder()
+                .reporter(reporter).reported(reported)
+                .reason(ReportReason.NO_TRADE).description("거래 거부")
+                .build();
+        setId(report, 1L);
+        report.updateStatus(ReportStatus.REVIEWED, "검토 중");
+        report.updateStatus(ReportStatus.RESOLVED, "처리 완료");
+
+        given(reportRepository.findById(1L)).willReturn(Optional.of(report));
+
+        assertThatThrownBy(() -> reportService.updateStatus(1L, ReportStatus.PENDING, "재검토"))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ReportErrorCode.INVALID_STATUS_TRANSITION));
     }
 
     @Test

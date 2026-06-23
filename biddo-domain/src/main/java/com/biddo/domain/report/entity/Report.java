@@ -2,7 +2,9 @@ package com.biddo.domain.report.entity;
 
 import com.biddo.domain.auction.model.Auction;
 import com.biddo.domain.common.entity.BaseModifiedTimeEntity;
+import com.biddo.domain.common.exception.BusinessException;
 import com.biddo.domain.member.entity.Member;
+import com.biddo.domain.report.exception.ReportErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -60,8 +62,11 @@ public class Report extends BaseModifiedTimeEntity {
         this.status = ReportStatus.PENDING;
     }
 
-    public void updateStatus(ReportStatus status, String adminNote) {
-        this.status = status;
+    public void updateStatus(ReportStatus newStatus, String adminNote) {
+        if (!this.status.canTransitionTo(newStatus)) {
+            throw new BusinessException(ReportErrorCode.INVALID_STATUS_TRANSITION);
+        }
+        this.status = newStatus;
         this.adminNote = adminNote;
     }
 }
