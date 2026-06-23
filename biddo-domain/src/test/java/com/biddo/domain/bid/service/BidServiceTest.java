@@ -89,6 +89,14 @@ class BidServiceTest {
             return callback.doInTransaction(null);
         });
 
+        lenient().doAnswer(inv -> {
+            Auction a = inv.getArgument(0);
+            Long amount = inv.getArgument(1);
+            Member b = inv.getArgument(2);
+            a.applyBid(amount, b);
+            return null;
+        }).when(auctionService).applyBid(any(Auction.class), any(Long.class), any(Member.class));
+
         seller = Member.builder()
                 .email("seller@test.com")
                 .password("encoded")

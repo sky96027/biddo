@@ -1,7 +1,7 @@
 package com.biddo.infra.sse;
 
-import com.biddo.domain.notification.entity.Notification;
-import com.biddo.domain.notification.port.NotificationPushPort;
+import com.biddo.domain.notification.model.Notification;
+import com.biddo.domain.notification.port.out.NotificationPushPort;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;

@@ -4,7 +4,7 @@ import com.biddo.api.common.response.ApiResponse;
 import com.biddo.api.common.response.CursorResponse;
 import com.biddo.api.common.security.CustomUserDetails;
 import com.biddo.api.notification.dto.response.NotificationResponse;
-import com.biddo.domain.notification.entity.Notification;
+import com.biddo.domain.notification.model.Notification;
 import com.biddo.domain.notification.service.NotificationService;
 import com.biddo.infra.sse.NotificationSseAdapter;
 import io.swagger.v3.oas.annotations.tags.Tag;

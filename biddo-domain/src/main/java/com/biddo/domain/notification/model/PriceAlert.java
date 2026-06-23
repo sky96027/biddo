@@ -1,4 +1,4 @@
-package com.biddo.domain.notification.entity;
+package com.biddo.domain.notification.model;
 
 import com.biddo.domain.member.entity.Member;
 import jakarta.persistence.*;

@@ -5,7 +5,7 @@ import com.biddo.domain.auction.port.out.AuctionRepository;
 import com.biddo.domain.bid.port.out.BidRepository;
 import com.biddo.domain.category.entity.Category;
 import com.biddo.domain.category.repository.CategoryRepository;
-import com.biddo.domain.notification.repository.PriceAlertRepository;
+import com.biddo.domain.notification.port.out.PriceAlertRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

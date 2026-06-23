@@ -1,6 +1,6 @@
 package com.biddo.infra.kafka.consumer;
 
-import com.biddo.domain.notification.entity.NotificationType;
+import com.biddo.domain.notification.model.NotificationType;
 import com.biddo.domain.notification.service.NotificationService;
 import com.biddo.domain.search.entity.KeywordAlert;
 import com.biddo.domain.search.service.KeywordAlertService;
