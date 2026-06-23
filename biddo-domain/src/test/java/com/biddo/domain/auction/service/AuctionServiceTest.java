@@ -14,8 +14,8 @@ import com.biddo.domain.category.entity.Category;
 import com.biddo.domain.category.repository.CategoryRepository;
 import com.biddo.domain.common.exception.BusinessException;
 import com.biddo.domain.member.entity.Member;
-import com.biddo.domain.member.exception.MemberErrorCode;
-import com.biddo.domain.member.repository.MemberRepository;
+import com.biddo.domain.member.exception.MemberNotFoundException;
+import com.biddo.domain.member.service.MemberService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -45,7 +45,7 @@ class AuctionServiceTest {
     private AuctionRepository auctionRepository;
 
     @Mock
-    private MemberRepository memberRepository;
+    private MemberService memberService;
 
     @Mock
     private CategoryRepository categoryRepository;
@@ -98,7 +98,7 @@ class AuctionServiceTest {
     @Test
     @DisplayName("경매 생성 성공")
     void create_validInput_success() {
-        given(memberRepository.findById(1L)).willReturn(Optional.of(seller));
+        given(memberService.findById(1L)).willReturn(seller);
         given(categoryRepository.findById(9L)).willReturn(Optional.of(category));
         given(auctionRepository.save(any(Auction.class))).willAnswer(invocation -> {
             Auction auction = invocation.getArgument(0);
@@ -119,7 +119,7 @@ class AuctionServiceTest {
     @Test
     @DisplayName("경매 생성 실패 - 카테고리 없음")
     void create_categoryNotFound_throwsException() {
-        given(memberRepository.findById(1L)).willReturn(Optional.of(seller));
+        given(memberService.findById(1L)).willReturn(seller);
         given(categoryRepository.findById(999L)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> auctionService.create(1L, 999L, "iPhone", "설명",
@@ -199,19 +199,17 @@ class AuctionServiceTest {
     @Test
     @DisplayName("경매 생성 실패 - 회원 없음")
     void create_memberNotFound_throwsException() {
-        given(memberRepository.findById(999L)).willReturn(Optional.empty());
+        given(memberService.findById(999L)).willThrow(new MemberNotFoundException());
 
         assertThatThrownBy(() -> auctionService.create(999L, 9L, "iPhone", "설명",
                 ItemCondition.NEW, 500000L, null, startTime, endTime, null))
-                .isInstanceOf(BusinessException.class)
-                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
-                        .isEqualTo(MemberErrorCode.MEMBER_NOT_FOUND));
+                .isInstanceOf(MemberNotFoundException.class);
     }
 
     @Test
     @DisplayName("경매 생성 실패 - 종료시간이 시작시간 이전")
     void create_invalidTime_throwsException() {
-        given(memberRepository.findById(1L)).willReturn(Optional.of(seller));
+        given(memberService.findById(1L)).willReturn(seller);
         given(categoryRepository.findById(9L)).willReturn(Optional.of(category));
 
         LocalDateTime invalidEndTime = startTime.minusHours(1);

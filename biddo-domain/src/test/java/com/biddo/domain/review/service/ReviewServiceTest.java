@@ -3,7 +3,7 @@ package com.biddo.domain.review.service;
 import com.biddo.domain.auction.model.Auction;
 import com.biddo.domain.auction.model.AuctionStatus;
 import com.biddo.domain.auction.model.ItemCondition;
-import com.biddo.domain.auction.port.out.AuctionRepository;
+import com.biddo.domain.auction.service.AuctionService;
 import com.biddo.domain.category.entity.Category;
 import com.biddo.domain.common.exception.BusinessException;
 import com.biddo.domain.member.entity.Member;
@@ -37,7 +37,7 @@ class ReviewServiceTest {
     private ReviewRepository reviewRepository;
 
     @Mock
-    private AuctionRepository auctionRepository;
+    private AuctionService auctionService;
 
     private Member seller;
     private Member buyer;
@@ -71,7 +71,7 @@ class ReviewServiceTest {
     @Test
     @DisplayName("후기 작성 성공")
     void create_validInput_returnsSavedReview() {
-        given(auctionRepository.findById(1L)).willReturn(Optional.of(endedAuction));
+        given(auctionService.findAuctionById(1L)).willReturn(endedAuction);
         given(reviewRepository.existsByAuctionIdAndReviewerId(1L, 2L)).willReturn(false);
         given(reviewRepository.save(any(Review.class))).willAnswer(inv -> {
             Review r = inv.getArgument(0);
@@ -90,7 +90,7 @@ class ReviewServiceTest {
     @Test
     @DisplayName("후기 작성 실패 - 낙찰자 아님")
     void create_notWinner_throwsException() {
-        given(auctionRepository.findById(1L)).willReturn(Optional.of(endedAuction));
+        given(auctionService.findAuctionById(1L)).willReturn(endedAuction);
 
         assertThatThrownBy(() -> reviewService.create(1L, 999L, 5, "내용"))
                 .isInstanceOf(BusinessException.class)
@@ -101,7 +101,7 @@ class ReviewServiceTest {
     @Test
     @DisplayName("후기 작성 실패 - 이미 작성됨")
     void create_alreadyReviewed_throwsException() {
-        given(auctionRepository.findById(1L)).willReturn(Optional.of(endedAuction));
+        given(auctionService.findAuctionById(1L)).willReturn(endedAuction);
         given(reviewRepository.existsByAuctionIdAndReviewerId(1L, 2L)).willReturn(true);
 
         assertThatThrownBy(() -> reviewService.create(1L, 2L, 5, "내용"))
@@ -124,7 +124,7 @@ class ReviewServiceTest {
         setId(activeAuction, 2L);
         setField(activeAuction, "status", AuctionStatus.ACTIVE);
 
-        given(auctionRepository.findById(2L)).willReturn(Optional.of(activeAuction));
+        given(auctionService.findAuctionById(2L)).willReturn(activeAuction);
 
         assertThatThrownBy(() -> reviewService.create(2L, 2L, 5, "내용"))
                 .isInstanceOf(BusinessException.class)

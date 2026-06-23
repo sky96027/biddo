@@ -1,6 +1,6 @@
 package com.biddo.domain.report.service;
 
-import com.biddo.domain.auction.port.out.AuctionRepository;
+import com.biddo.domain.auction.service.AuctionService;
 import com.biddo.domain.common.exception.BusinessException;
 import com.biddo.domain.member.entity.Member;
 import com.biddo.domain.member.repository.MemberRepository;
@@ -37,7 +37,7 @@ class ReportServiceTest {
     private MemberRepository memberRepository;
 
     @Mock
-    private AuctionRepository auctionRepository;
+    private AuctionService auctionService;
 
     private Member reporter;
     private Member reported;
