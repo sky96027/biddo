@@ -2,8 +2,8 @@ package com.biddo.infra.kafka.consumer;
 
 import com.biddo.domain.auction.model.Auction;
 import com.biddo.domain.auction.port.out.AuctionRepository;
-import com.biddo.domain.notification.entity.NotificationType;
-import com.biddo.domain.notification.entity.PriceAlert;
+import com.biddo.domain.notification.model.NotificationType;
+import com.biddo.domain.notification.model.PriceAlert;
 import com.biddo.domain.notification.service.NotificationService;
 import com.biddo.domain.notification.service.PriceAlertService;
 import com.biddo.infra.kafka.KafkaConfig;

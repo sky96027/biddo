@@ -5,7 +5,7 @@ import com.biddo.domain.auction.port.out.AuctionRepository;
 import com.biddo.domain.bid.port.out.BidRepository;
 import com.biddo.domain.member.entity.Member;
 import com.biddo.domain.member.repository.MemberRepository;
-import com.biddo.domain.notification.entity.NotificationType;
+import com.biddo.domain.notification.model.NotificationType;
 import com.biddo.domain.notification.service.NotificationService;
 import com.biddo.infra.kafka.KafkaConfig;
 import com.biddo.infra.kafka.event.BidEvent;

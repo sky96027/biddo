@@ -12,13 +12,13 @@
 - domain ↔ infra 경계의 컴파일 타임 강제가 목적.
 - 크로스 도메인 참조(Member, Auction)가 많아 도메인 경계 모듈화의 실효성이 낮음.
 
-## 포트/어댑터 (Bid, Auction)
+## 포트/어댑터 (Bid, Auction, Notification)
 
 - `biddo-domain` 내 `port/out/` 인터페이스 정의 → `biddo-infra`에서 구현.
 - Service는 포트 인터페이스에만 의존할 것. 구현체 직접 참조 **금지**.
 - 새 외부 시스템 연동 시: domain에 포트 추가 → infra에 어댑터 구현. 이 순서를 지킬 것.
 
-## 레이어드 (Member, Chat, Notification, Review, Report)
+## 레이어드 (Member, Chat, Review, Report)
 
 - `entity/`, `repository/`, `service/`, `exception/` 구조.
 - Spring Data JPA Repository 직접 상속 허용.
