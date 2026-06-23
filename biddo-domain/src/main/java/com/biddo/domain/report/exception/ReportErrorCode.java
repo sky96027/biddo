@@ -9,7 +9,8 @@ import lombok.RequiredArgsConstructor;
 public enum ReportErrorCode implements ErrorCode {
 
     REPORT_NOT_FOUND(404, "REPORT_001", "신고를 찾을 수 없습니다."),
-    SELF_REPORT_NOT_ALLOWED(400, "REPORT_002", "본인을 신고할 수 없습니다.");
+    SELF_REPORT_NOT_ALLOWED(400, "REPORT_002", "본인을 신고할 수 없습니다."),
+    INVALID_STATUS_TRANSITION(409, "REPORT_003", "유효하지 않은 신고 상태 전이입니다.");
 
     private final int status;
     private final String code;
