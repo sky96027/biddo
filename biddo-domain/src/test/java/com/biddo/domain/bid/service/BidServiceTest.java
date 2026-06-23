@@ -3,9 +3,9 @@ package com.biddo.domain.bid.service;
 import com.biddo.domain.auction.model.Auction;
 import com.biddo.domain.auction.model.AuctionStatus;
 import com.biddo.domain.auction.model.ItemCondition;
-import com.biddo.domain.auction.port.out.AuctionEventPublisher;
 import com.biddo.domain.auction.port.out.AuctionLifecyclePort;
 import com.biddo.domain.auction.port.out.AuctionRepository;
+import com.biddo.domain.auction.service.AuctionService;
 import com.biddo.domain.bid.exception.BidErrorCode;
 import com.biddo.domain.bid.model.AutoBid;
 import com.biddo.domain.bid.model.Bid;
@@ -15,7 +15,6 @@ import com.biddo.domain.bid.port.out.AutoBidRepository;
 import com.biddo.domain.bid.port.out.BidEventPublisher;
 import com.biddo.domain.bid.port.out.BidRepository;
 import com.biddo.domain.category.entity.Category;
-import com.biddo.domain.chat.service.ChatService;
 import com.biddo.domain.common.exception.BusinessException;
 import com.biddo.domain.member.entity.Member;
 import com.biddo.domain.member.repository.MemberRepository;
@@ -64,13 +63,10 @@ class BidServiceTest {
     private BidEventPublisher bidEventPublisher;
 
     @Mock
-    private AuctionEventPublisher auctionEventPublisher;
-
-    @Mock
     private AuctionLifecyclePort auctionLifecyclePort;
 
     @Mock
-    private ChatService chatService;
+    private AuctionService auctionService;
 
     @Mock
     private AuctionLockPort auctionLockPort;
@@ -216,10 +212,8 @@ class BidServiceTest {
 
             assertThat(result.getBidType()).isEqualTo(BidType.BUY_NOW);
             assertThat(result.getBidAmount()).isEqualTo(1_000_000L);
-            assertThat(auctionWithBuyNow.getStatus()).isEqualTo(AuctionStatus.SOLD);
-            verify(autoBidRepository).deactivateAllByAuctionId(1L);
-            verify(chatService).createRoom(auctionWithBuyNow);
-            verify(auctionEventPublisher).publishAuctionSold(auctionWithBuyNow);
+            verify(auctionService).completeBuyNow(auctionWithBuyNow, bidder);
+            verify(bidEventPublisher).publishBidPlaced(result);
         }
 
         @Test
@@ -287,6 +281,39 @@ class BidServiceTest {
                     .isInstanceOf(BusinessException.class)
                     .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                             .isEqualTo(BidErrorCode.AUTO_BID_MAX_TOO_LOW));
+        }
+    }
+
+    @Nested
+    @DisplayName("자동 입찰 취소")
+    class CancelAutoBidTest {
+
+        @Test
+        @DisplayName("자동 입찰 취소 성공")
+        void cancelAutoBid_existing_success() {
+            AutoBid autoBid = AutoBid.builder()
+                    .auction(auction)
+                    .bidder(bidder)
+                    .maxAmount(800_000L)
+                    .build();
+            setId(autoBid, 1L);
+
+            given(autoBidRepository.findByAuctionIdAndBidderId(1L, 2L)).willReturn(Optional.of(autoBid));
+
+            bidService.cancelAutoBid(1L, 2L);
+
+            assertThat(autoBid.isActive()).isFalse();
+        }
+
+        @Test
+        @DisplayName("자동 입찰 취소 실패 - 존재하지 않음")
+        void cancelAutoBid_notFound_throwsException() {
+            given(autoBidRepository.findByAuctionIdAndBidderId(1L, 2L)).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> bidService.cancelAutoBid(1L, 2L))
+                    .isInstanceOf(BusinessException.class)
+                    .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                            .isEqualTo(BidErrorCode.AUTO_BID_NOT_FOUND));
         }
     }
 

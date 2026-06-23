@@ -47,7 +47,7 @@
 |------|--------|--------------|
 | PENDING → ACTIVE | RedisKeyExpirationListener | AuctionEventConsumer, AuctionSearchConsumer, KeywordAlertConsumer |
 | ACTIVE → ENDED | RedisKeyExpirationListener | AuctionEventConsumer, AuctionWebSocketConsumer, AuctionSearchConsumer |
-| ACTIVE → SOLD | BidService (즉시 구매) | AuctionEventConsumer, AuctionWebSocketConsumer, AuctionSearchConsumer |
+| ACTIVE → SOLD | AuctionService | AuctionEventConsumer, AuctionWebSocketConsumer, AuctionSearchConsumer |
 | PENDING → CANCELLED | AuctionService | AuctionSearchConsumer |
 
 ## 수정 전 확인

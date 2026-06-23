@@ -1,6 +1,6 @@
 package com.biddo.domain.member.entity;
 
-import com.biddo.domain.common.entity.BaseTimeEntity;
+import com.biddo.domain.common.entity.BaseModifiedTimeEntity;
 import com.biddo.domain.common.exception.BusinessException;
 import com.biddo.domain.member.exception.MemberErrorCode;
 import jakarta.persistence.*;
@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 @Table(name = "member")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Member extends BaseTimeEntity {
+public class Member extends BaseModifiedTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

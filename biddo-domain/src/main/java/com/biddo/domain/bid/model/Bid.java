@@ -1,14 +1,13 @@
 package com.biddo.domain.bid.model;
 
 import com.biddo.domain.auction.model.Auction;
+import com.biddo.domain.common.entity.BaseCreatedTimeEntity;
 import com.biddo.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "bid", indexes = {
@@ -18,7 +17,7 @@ import java.time.LocalDateTime;
 })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Bid {
+public class Bid extends BaseCreatedTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -43,9 +42,6 @@ public class Bid {
     @Column(nullable = false)
     private boolean isWinning;
 
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
     @Builder
     public Bid(Auction auction, Member bidder, Long bidAmount, BidType bidType) {
         this.auction = auction;
@@ -53,7 +49,6 @@ public class Bid {
         this.bidAmount = bidAmount;
         this.bidType = bidType;
         this.isWinning = true;
-        this.createdAt = LocalDateTime.now();
     }
 
     public void loseWinning() {

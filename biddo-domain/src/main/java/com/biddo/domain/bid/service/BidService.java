@@ -3,9 +3,9 @@ package com.biddo.domain.bid.service;
 import com.biddo.domain.auction.exception.AuctionNotFoundException;
 import com.biddo.domain.auction.model.Auction;
 import com.biddo.domain.auction.model.AuctionStatus;
-import com.biddo.domain.auction.port.out.AuctionEventPublisher;
 import com.biddo.domain.auction.port.out.AuctionLifecyclePort;
 import com.biddo.domain.auction.port.out.AuctionRepository;
+import com.biddo.domain.auction.service.AuctionService;
 import com.biddo.domain.bid.exception.BidErrorCode;
 import com.biddo.domain.bid.model.AutoBid;
 import com.biddo.domain.bid.model.Bid;
@@ -14,7 +14,6 @@ import com.biddo.domain.bid.port.out.AuctionLockPort;
 import com.biddo.domain.bid.port.out.AutoBidRepository;
 import com.biddo.domain.bid.port.out.BidEventPublisher;
 import com.biddo.domain.bid.port.out.BidRepository;
-import com.biddo.domain.chat.service.ChatService;
 import com.biddo.domain.common.exception.BusinessException;
 import com.biddo.domain.member.entity.Member;
 import com.biddo.domain.member.exception.MemberErrorCode;
@@ -42,9 +41,8 @@ public class BidService {
     private final AuctionRepository auctionRepository;
     private final MemberRepository memberRepository;
     private final BidEventPublisher bidEventPublisher;
-    private final AuctionEventPublisher auctionEventPublisher;
     private final AuctionLifecyclePort auctionLifecyclePort;
-    private final ChatService chatService;
+    private final AuctionService auctionService;
     private final AuctionLockPort auctionLockPort;
     private final TransactionTemplate transactionTemplate;
 
@@ -106,14 +104,8 @@ public class BidService {
         }
 
         Bid bid = createBid(auction, bidder, auction.getBuyNowPrice(), BidType.BUY_NOW);
-        auction.sell(bidder);
-        autoBidRepository.deactivateAllByAuctionId(auctionId);
-        auctionLifecyclePort.cancelSchedule(auctionId);
-        chatService.createRoom(auction);
+        auctionService.completeBuyNow(auction, bidder);
         bidEventPublisher.publishBidPlaced(bid);
-        auctionEventPublisher.publishAuctionSold(auction);
-        log.info("즉시구매 완료: auctionId={}, buyerId={}, price={}",
-                auctionId, bidderId, auction.getBuyNowPrice());
 
         return bid;
     }
