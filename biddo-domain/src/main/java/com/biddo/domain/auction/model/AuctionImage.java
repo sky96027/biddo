@@ -1,18 +1,17 @@
 package com.biddo.domain.auction.model;
 
+import com.biddo.domain.common.entity.BaseCreatedTimeEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
 @Entity
 @Table(name = "auction_image")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class AuctionImage {
+public class AuctionImage extends BaseCreatedTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,14 +28,10 @@ public class AuctionImage {
     @Column(nullable = false)
     private int sortOrder;
 
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
     @Builder
     public AuctionImage(Auction auction, String imageUrl, int sortOrder) {
         this.auction = auction;
         this.imageUrl = imageUrl;
         this.sortOrder = sortOrder;
-        this.createdAt = LocalDateTime.now();
     }
 }

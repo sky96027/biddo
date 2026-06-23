@@ -285,6 +285,39 @@ class BidServiceTest {
     }
 
     @Nested
+    @DisplayName("자동 입찰 취소")
+    class CancelAutoBidTest {
+
+        @Test
+        @DisplayName("자동 입찰 취소 성공")
+        void cancelAutoBid_existing_success() {
+            AutoBid autoBid = AutoBid.builder()
+                    .auction(auction)
+                    .bidder(bidder)
+                    .maxAmount(800_000L)
+                    .build();
+            setId(autoBid, 1L);
+
+            given(autoBidRepository.findByAuctionIdAndBidderId(1L, 2L)).willReturn(Optional.of(autoBid));
+
+            bidService.cancelAutoBid(1L, 2L);
+
+            assertThat(autoBid.isActive()).isFalse();
+        }
+
+        @Test
+        @DisplayName("자동 입찰 취소 실패 - 존재하지 않음")
+        void cancelAutoBid_notFound_throwsException() {
+            given(autoBidRepository.findByAuctionIdAndBidderId(1L, 2L)).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> bidService.cancelAutoBid(1L, 2L))
+                    .isInstanceOf(BusinessException.class)
+                    .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                            .isEqualTo(BidErrorCode.AUTO_BID_NOT_FOUND));
+        }
+    }
+
+    @Nested
     @DisplayName("최소 입찰 증가 단위 계산")
     class MinIncrementTest {
 
