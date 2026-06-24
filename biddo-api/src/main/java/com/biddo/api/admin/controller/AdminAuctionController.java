@@ -1,5 +1,6 @@
 package com.biddo.api.admin.controller;
 
+import com.biddo.api.common.response.ApiResponse;
 import com.biddo.domain.auction.service.AuctionService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +17,8 @@ public class AdminAuctionController {
 
     @DeleteMapping("/{auctionId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void forceCancel(@PathVariable Long auctionId) {
+    public ApiResponse<Void> forceCancel(@PathVariable Long auctionId) {
         auctionService.forceCancel(auctionId);
+        return ApiResponse.success();
     }
 }
