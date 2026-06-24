@@ -7,9 +7,9 @@
 | 레이어 | 파일 | 역할 |
 |--------|------|------|
 | **domain** | `bid/service/BidService.java` | 입찰 핵심 로직 |
-| **domain** | `bid/model/Bid.java` | 입찰 엔티티 |
-| **domain** | `bid/model/AutoBid.java` | 자동입찰 엔티티 |
-| **domain** | `bid/model/BidType.java` | MANUAL / AUTO / BUY_NOW |
+| **domain** | `bid/entity/Bid.java` | 입찰 엔티티 |
+| **domain** | `bid/entity/AutoBid.java` | 자동입찰 엔티티 |
+| **domain** | `bid/entity/BidType.java` | MANUAL / AUTO / BUY_NOW |
 | **domain** | `bid/port/out/BidRepository.java` | DB 포트 |
 | **domain** | `bid/port/out/AutoBidRepository.java` | 자동입찰 DB 포트 |
 | **domain** | `bid/port/out/BidEventPublisher.java` | Kafka 발행 포트 |

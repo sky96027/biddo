@@ -7,9 +7,9 @@
 | 레이어 | 파일 | 역할 |
 |--------|------|------|
 | **domain** | `auction/service/AuctionService.java` | 경매 핵심 로직 |
-| **domain** | `auction/model/Auction.java` | 경매 엔티티 (상태 전이 포함) |
-| **domain** | `auction/model/AuctionStatus.java` | PENDING / ACTIVE / ENDED / CANCELLED / SOLD |
-| **domain** | `auction/model/AuctionImage.java` | 경매 이미지 |
+| **domain** | `auction/entity/Auction.java` | 경매 엔티티 (상태 전이 포함) |
+| **domain** | `auction/entity/AuctionStatus.java` | PENDING / ACTIVE / ENDED / CANCELLED / SOLD |
+| **domain** | `auction/entity/AuctionImage.java` | 경매 이미지 |
 | **domain** | `auction/port/out/AuctionRepository.java` | DB 포트 |
 | **domain** | `auction/port/out/AuctionLifecyclePort.java` | Redis TTL 스케줄링 포트 |
 | **domain** | `auction/port/out/AuctionEventPublisher.java` | Kafka 발행 포트 |

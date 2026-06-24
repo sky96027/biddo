@@ -32,7 +32,7 @@
 
 | 클래스 유형 | 모듈 | 경로 |
 |------------|------|------|
-| 엔티티/모델 | domain | `com.biddo.domain.{도메인}.model/` 또는 `entity/` |
+| 엔티티 | domain | `com.biddo.domain.{도메인}.entity/` |
 | 포트 인터페이스 | domain | `com.biddo.domain.{도메인}.port.out/` |
 | 서비스 | domain | `com.biddo.domain.{도메인}.service/` |
 | ErrorCode enum | domain | `com.biddo.domain.{도메인}.exception/` |
