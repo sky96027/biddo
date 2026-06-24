@@ -46,6 +46,10 @@ spring:
       auto-offset-reset: earliest
       properties:
         spring.json.trusted.packages: "com.biddo.infra.kafka.event"
+    template:
+      observation-enabled: true
+    listener:
+      observation-enabled: true
 
 cloud:
   aws:
@@ -73,6 +77,12 @@ management:
     metrics:
       export:
         enabled: true
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
+  otlp:
+    tracing:
+      endpoint: ${TEMPO_ENDPOINT:http://localhost:4318/v1/traces}
 
 resilience4j:
   circuitbreaker:
