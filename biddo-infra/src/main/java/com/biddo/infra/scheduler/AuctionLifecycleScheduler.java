@@ -1,6 +1,6 @@
 package com.biddo.infra.scheduler;
 
-import com.biddo.domain.auction.model.Auction;
+import com.biddo.domain.auction.entity.Auction;
 import com.biddo.domain.auction.port.out.AuctionRepository;
 import com.biddo.domain.auction.service.AuctionService;
 import lombok.RequiredArgsConstructor;

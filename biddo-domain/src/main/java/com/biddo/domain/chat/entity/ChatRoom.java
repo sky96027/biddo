@@ -1,6 +1,6 @@
 package com.biddo.domain.chat.entity;
 
-import com.biddo.domain.auction.model.Auction;
+import com.biddo.domain.auction.entity.Auction;
 import com.biddo.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.AccessLevel;

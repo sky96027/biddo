@@ -1,6 +1,6 @@
 package com.biddo.infra.bid;
 
-import com.biddo.domain.bid.model.Bid;
+import com.biddo.domain.bid.entity.Bid;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;

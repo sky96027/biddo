@@ -1,10 +1,10 @@
 package com.biddo.api.integration;
 
-import com.biddo.domain.auction.model.Auction;
-import com.biddo.domain.auction.model.AuctionStatus;
-import com.biddo.domain.bid.model.AutoBid;
-import com.biddo.domain.bid.model.Bid;
-import com.biddo.domain.bid.model.BidType;
+import com.biddo.domain.auction.entity.Auction;
+import com.biddo.domain.auction.entity.AuctionStatus;
+import com.biddo.domain.bid.entity.AutoBid;
+import com.biddo.domain.bid.entity.Bid;
+import com.biddo.domain.bid.entity.BidType;
 import com.biddo.domain.bid.port.out.AutoBidRepository;
 import com.biddo.domain.bid.port.out.BidRepository;
 import com.biddo.domain.bid.service.BidService;

@@ -1,8 +1,8 @@
 package com.biddo.domain.chat.service;
 
-import com.biddo.domain.auction.model.Auction;
-import com.biddo.domain.auction.model.AuctionStatus;
-import com.biddo.domain.auction.model.ItemCondition;
+import com.biddo.domain.auction.entity.Auction;
+import com.biddo.domain.auction.entity.AuctionStatus;
+import com.biddo.domain.auction.entity.ItemCondition;
 import com.biddo.domain.category.entity.Category;
 import com.biddo.domain.chat.entity.*;
 import com.biddo.domain.chat.exception.ChatErrorCode;

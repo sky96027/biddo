@@ -1,6 +1,6 @@
 package com.biddo.infra.elasticsearch;
 
-import com.biddo.domain.auction.model.Auction;
+import com.biddo.domain.auction.entity.Auction;
 import com.biddo.domain.search.dto.AuctionSearchCondition;
 import com.biddo.domain.search.dto.AuctionSearchResult;
 import com.biddo.domain.auction.port.out.AuctionRepository;

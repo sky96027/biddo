@@ -1,6 +1,6 @@
 package com.biddo.domain.bid.port.out;
 
-import com.biddo.domain.bid.model.AutoBid;
+import com.biddo.domain.bid.entity.AutoBid;
 
 import java.util.List;
 import java.util.Optional;

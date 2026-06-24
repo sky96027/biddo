@@ -1,6 +1,6 @@
 package com.biddo.infra.bid;
 
-import com.biddo.domain.bid.model.Bid;
+import com.biddo.domain.bid.entity.Bid;
 import com.biddo.domain.bid.port.out.BidRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;

@@ -1,6 +1,6 @@
 package com.biddo.infra.kafka.consumer;
 
-import com.biddo.domain.auction.model.Auction;
+import com.biddo.domain.auction.entity.Auction;
 import com.biddo.domain.auction.port.out.AuctionRepository;
 import com.biddo.domain.member.entity.Member;
 import com.biddo.domain.member.repository.MemberRepository;

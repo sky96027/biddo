@@ -1,6 +1,6 @@
 package com.biddo.infra.bid;
 
-import com.biddo.domain.bid.model.AutoBid;
+import com.biddo.domain.bid.entity.AutoBid;
 import com.biddo.domain.bid.port.out.AutoBidRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
