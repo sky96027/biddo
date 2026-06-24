@@ -1,6 +1,6 @@
 package com.biddo.infra.notification;
 
-import com.biddo.domain.notification.model.PriceAlert;
+import com.biddo.domain.notification.entity.PriceAlert;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

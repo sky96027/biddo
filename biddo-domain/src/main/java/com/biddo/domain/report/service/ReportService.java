@@ -1,6 +1,6 @@
 package com.biddo.domain.report.service;
 
-import com.biddo.domain.auction.model.Auction;
+import com.biddo.domain.auction.entity.Auction;
 import com.biddo.domain.auction.service.AuctionService;
 import com.biddo.domain.common.exception.BusinessException;
 import com.biddo.domain.member.entity.Member;

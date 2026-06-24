@@ -1,6 +1,6 @@
 package com.biddo.api.bid.dto.response;
 
-import com.biddo.domain.bid.model.AutoBid;
+import com.biddo.domain.bid.entity.AutoBid;
 import lombok.Getter;
 
 import java.time.LocalDateTime;

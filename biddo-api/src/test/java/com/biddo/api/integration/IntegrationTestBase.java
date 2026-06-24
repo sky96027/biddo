@@ -1,8 +1,7 @@
 package com.biddo.api.integration;
 
-import com.biddo.domain.auction.model.Auction;
-import com.biddo.domain.auction.model.AuctionStatus;
-import com.biddo.domain.auction.model.ItemCondition;
+import com.biddo.domain.auction.entity.Auction;
+import com.biddo.domain.auction.entity.ItemCondition;
 import com.biddo.domain.auction.port.out.AuctionRepository;
 import com.biddo.domain.category.entity.Category;
 import com.biddo.domain.category.repository.CategoryRepository;
@@ -15,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;

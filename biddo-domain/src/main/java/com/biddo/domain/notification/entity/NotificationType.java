@@ -1,4 +1,4 @@
-package com.biddo.domain.notification.model;
+package com.biddo.domain.notification.entity;
 
 public enum NotificationType {
     BID,

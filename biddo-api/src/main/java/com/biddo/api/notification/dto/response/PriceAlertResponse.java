@@ -1,6 +1,6 @@
 package com.biddo.api.notification.dto.response;
 
-import com.biddo.domain.notification.model.PriceAlert;
+import com.biddo.domain.notification.entity.PriceAlert;
 import lombok.Builder;
 import lombok.Getter;
 

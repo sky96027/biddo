@@ -1,8 +1,7 @@
 package com.biddo.infra.kafka;
 
-import com.biddo.domain.auction.model.Auction;
-import com.biddo.domain.auction.model.AuctionStatus;
-import com.biddo.domain.auction.model.ItemCondition;
+import com.biddo.domain.auction.entity.Auction;
+import com.biddo.domain.auction.entity.ItemCondition;
 import com.biddo.domain.category.entity.Category;
 import com.biddo.domain.member.entity.Member;
 import org.junit.jupiter.api.AfterEach;

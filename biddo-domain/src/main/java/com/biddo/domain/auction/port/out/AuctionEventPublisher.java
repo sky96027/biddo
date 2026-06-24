@@ -1,6 +1,6 @@
 package com.biddo.domain.auction.port.out;
 
-import com.biddo.domain.auction.model.Auction;
+import com.biddo.domain.auction.entity.Auction;
 
 public interface AuctionEventPublisher {
 

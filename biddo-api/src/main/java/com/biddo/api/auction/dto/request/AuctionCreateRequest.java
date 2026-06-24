@@ -1,6 +1,6 @@
 package com.biddo.api.auction.dto.request;
 
-import com.biddo.domain.auction.model.ItemCondition;
+import com.biddo.domain.auction.entity.ItemCondition;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
