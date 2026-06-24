@@ -9,7 +9,7 @@ import com.biddo.domain.auction.model.Auction;
 import com.biddo.domain.auction.port.out.AuctionRepository;
 import com.biddo.domain.common.exception.BusinessException;
 import com.biddo.domain.auction.exception.AuctionErrorCode;
-import com.biddo.domain.notification.entity.PriceAlert;
+import com.biddo.domain.notification.model.PriceAlert;
 import com.biddo.domain.notification.service.PriceAlertService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

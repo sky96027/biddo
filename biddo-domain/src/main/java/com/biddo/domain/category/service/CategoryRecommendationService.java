@@ -4,7 +4,7 @@ import com.biddo.domain.auction.port.out.AuctionRepository;
 import com.biddo.domain.bid.port.out.BidRepository;
 import com.biddo.domain.category.entity.Category;
 import com.biddo.domain.category.repository.CategoryRepository;
-import com.biddo.domain.notification.repository.PriceAlertRepository;
+import com.biddo.domain.notification.port.out.PriceAlertRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

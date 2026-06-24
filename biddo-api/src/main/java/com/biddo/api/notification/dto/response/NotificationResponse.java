@@ -1,7 +1,7 @@
 package com.biddo.api.notification.dto.response;
 
-import com.biddo.domain.notification.entity.Notification;
-import com.biddo.domain.notification.entity.NotificationType;
+import com.biddo.domain.notification.model.Notification;
+import com.biddo.domain.notification.model.NotificationType;
 import lombok.Getter;
 
 import java.time.LocalDateTime;

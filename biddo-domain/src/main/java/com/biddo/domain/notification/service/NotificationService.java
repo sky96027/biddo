@@ -2,13 +2,12 @@ package com.biddo.domain.notification.service;
 
 import com.biddo.domain.common.exception.BusinessException;
 import com.biddo.domain.member.entity.Member;
-import com.biddo.domain.notification.entity.Notification;
-import com.biddo.domain.notification.entity.NotificationType;
 import com.biddo.domain.notification.exception.NotificationErrorCode;
-import com.biddo.domain.notification.port.NotificationPushPort;
-import com.biddo.domain.notification.repository.NotificationRepository;
+import com.biddo.domain.notification.model.Notification;
+import com.biddo.domain.notification.model.NotificationType;
+import com.biddo.domain.notification.port.out.NotificationPushPort;
+import com.biddo.domain.notification.port.out.NotificationRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,19 +35,17 @@ public class NotificationService {
     }
 
     public List<Notification> findByReceiverId(Long receiverId, Boolean isRead, Long cursor, int size) {
-        PageRequest pageRequest = PageRequest.of(0, size);
-
         if (Boolean.FALSE.equals(isRead)) {
             if (cursor == null) {
-                return notificationRepository.findUnreadByReceiverIdFirstPage(receiverId, pageRequest);
+                return notificationRepository.findUnreadByReceiverIdFirstPage(receiverId, size);
             }
-            return notificationRepository.findUnreadByReceiverIdWithCursor(receiverId, cursor, pageRequest);
+            return notificationRepository.findUnreadByReceiverIdWithCursor(receiverId, cursor, size);
         }
 
         if (cursor == null) {
-            return notificationRepository.findByReceiverIdFirstPage(receiverId, pageRequest);
+            return notificationRepository.findByReceiverIdFirstPage(receiverId, size);
         }
-        return notificationRepository.findByReceiverIdWithCursor(receiverId, cursor, pageRequest);
+        return notificationRepository.findByReceiverIdWithCursor(receiverId, cursor, size);
     }
 
     public List<Notification> findAfter(Long receiverId, Long lastEventId) {

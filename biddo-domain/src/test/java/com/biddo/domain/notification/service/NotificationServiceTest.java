@@ -2,11 +2,11 @@ package com.biddo.domain.notification.service;
 
 import com.biddo.domain.common.exception.BusinessException;
 import com.biddo.domain.member.entity.Member;
-import com.biddo.domain.notification.entity.Notification;
-import com.biddo.domain.notification.entity.NotificationType;
 import com.biddo.domain.notification.exception.NotificationErrorCode;
-import com.biddo.domain.notification.port.NotificationPushPort;
-import com.biddo.domain.notification.repository.NotificationRepository;
+import com.biddo.domain.notification.model.Notification;
+import com.biddo.domain.notification.model.NotificationType;
+import com.biddo.domain.notification.port.out.NotificationPushPort;
+import com.biddo.domain.notification.port.out.NotificationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,7 +14,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
 import java.util.Optional;
@@ -77,7 +76,7 @@ class NotificationServiceTest {
     @Test
     @DisplayName("알림 목록 조회 - 전체 (첫 페이지)")
     void findByReceiverId_allFirstPage_returnsResult() {
-        given(notificationRepository.findByReceiverIdFirstPage(eq(1L), any(PageRequest.class)))
+        given(notificationRepository.findByReceiverIdFirstPage(eq(1L), eq(20)))
                 .willReturn(List.of(notification));
 
         List<Notification> result = notificationService.findByReceiverId(1L, null, null, 20);
@@ -88,7 +87,7 @@ class NotificationServiceTest {
     @Test
     @DisplayName("알림 목록 조회 - 안읽은 것만 (첫 페이지)")
     void findByReceiverId_unreadFirstPage_returnsResult() {
-        given(notificationRepository.findUnreadByReceiverIdFirstPage(eq(1L), any(PageRequest.class)))
+        given(notificationRepository.findUnreadByReceiverIdFirstPage(eq(1L), eq(20)))
                 .willReturn(List.of(notification));
 
         List<Notification> result = notificationService.findByReceiverId(1L, false, null, 20);
@@ -99,7 +98,7 @@ class NotificationServiceTest {
     @Test
     @DisplayName("알림 목록 조회 - 커서 기반")
     void findByReceiverId_withCursor_returnsResult() {
-        given(notificationRepository.findByReceiverIdWithCursor(eq(1L), eq(10L), any(PageRequest.class)))
+        given(notificationRepository.findByReceiverIdWithCursor(eq(1L), eq(10L), eq(20)))
                 .willReturn(List.of(notification));
 
         List<Notification> result = notificationService.findByReceiverId(1L, null, 10L, 20);
@@ -110,7 +109,7 @@ class NotificationServiceTest {
     @Test
     @DisplayName("알림 목록 조회 - 안읽은 것만 + 커서")
     void findByReceiverId_unreadWithCursor_returnsResult() {
-        given(notificationRepository.findUnreadByReceiverIdWithCursor(eq(1L), eq(10L), any(PageRequest.class)))
+        given(notificationRepository.findUnreadByReceiverIdWithCursor(eq(1L), eq(10L), eq(20)))
                 .willReturn(List.of(notification));
 
         List<Notification> result = notificationService.findByReceiverId(1L, false, 10L, 20);
