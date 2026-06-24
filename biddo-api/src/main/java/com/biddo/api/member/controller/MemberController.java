@@ -16,7 +16,6 @@ import com.biddo.domain.review.service.ReviewService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -44,14 +43,14 @@ public class MemberController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<MemberResponse>> getMyProfile(
+    public ApiResponse<MemberResponse> getMyProfile(
             @AuthenticationPrincipal CustomUserDetails userDetails) {
         Member member = memberService.findById(userDetails.getMemberId());
-        return ResponseEntity.ok(ApiResponse.success(new MemberResponse(member)));
+        return ApiResponse.success(new MemberResponse(member));
     }
 
     @PutMapping("/me")
-    public ResponseEntity<ApiResponse<MemberResponse>> updateProfile(
+    public ApiResponse<MemberResponse> updateProfile(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody ProfileUpdateRequest request) {
         Member member = memberService.updateProfile(
@@ -59,7 +58,7 @@ public class MemberController {
                 request.getNickname(),
                 request.getIntroduction(),
                 request.getProfileImageUrl());
-        return ResponseEntity.ok(ApiResponse.success(new MemberResponse(member)));
+        return ApiResponse.success(new MemberResponse(member));
     }
 
     @GetMapping("/me/selling")
