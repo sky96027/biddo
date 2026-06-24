@@ -1,7 +1,7 @@
 package com.biddo.infra.auction;
 
-import com.biddo.domain.auction.model.Auction;
-import com.biddo.domain.auction.model.AuctionStatus;
+import com.biddo.domain.auction.entity.Auction;
+import com.biddo.domain.auction.entity.AuctionStatus;
 import com.biddo.domain.auction.port.out.AuctionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;

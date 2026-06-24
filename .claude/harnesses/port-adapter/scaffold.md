@@ -14,7 +14,7 @@
 
 ```
 biddo-domain/src/main/java/com/biddo/domain/{도메인}/
-├── model/
+├── entity/
 │   └── {Domain}.java              # 엔티티 (@Entity, BaseTimeEntity 상속)
 ├── exception/
 │   ├── {Domain}ErrorCode.java     # enum implements ErrorCode

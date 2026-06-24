@@ -1,4 +1,4 @@
-package com.biddo.domain.bid.model;
+package com.biddo.domain.bid.entity;
 
 public enum BidType {
     MANUAL,

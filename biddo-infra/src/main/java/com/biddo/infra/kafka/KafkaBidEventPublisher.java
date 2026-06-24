@@ -1,6 +1,6 @@
 package com.biddo.infra.kafka;
 
-import com.biddo.domain.bid.model.Bid;
+import com.biddo.domain.bid.entity.Bid;
 import com.biddo.domain.bid.port.out.BidEventPublisher;
 import com.biddo.infra.kafka.event.BidEvent;
 import lombok.RequiredArgsConstructor;

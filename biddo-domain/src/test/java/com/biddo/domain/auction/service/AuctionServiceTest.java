@@ -2,9 +2,9 @@ package com.biddo.domain.auction.service;
 
 import com.biddo.domain.auction.exception.AuctionErrorCode;
 import com.biddo.domain.auction.exception.AuctionNotFoundException;
-import com.biddo.domain.auction.model.Auction;
-import com.biddo.domain.auction.model.AuctionStatus;
-import com.biddo.domain.auction.model.ItemCondition;
+import com.biddo.domain.auction.entity.Auction;
+import com.biddo.domain.auction.entity.AuctionStatus;
+import com.biddo.domain.auction.entity.ItemCondition;
 import com.biddo.domain.auction.port.out.AuctionEventPublisher;
 import com.biddo.domain.auction.port.out.AuctionLifecyclePort;
 import com.biddo.domain.auction.port.out.AuctionRepository;

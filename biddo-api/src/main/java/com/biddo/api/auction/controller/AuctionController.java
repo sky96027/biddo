@@ -8,7 +8,7 @@ import com.biddo.api.auction.dto.response.AuctionSummaryResponse;
 import com.biddo.api.common.response.ApiResponse;
 import com.biddo.api.common.security.CustomUserDetails;
 import com.biddo.api.search.dto.response.AuctionSearchResponse;
-import com.biddo.domain.auction.model.Auction;
+import com.biddo.domain.auction.entity.Auction;
 import com.biddo.domain.auction.port.out.AuctionRepository;
 import com.biddo.domain.auction.service.AuctionService;
 import com.biddo.domain.search.dto.AuctionSearchResult;

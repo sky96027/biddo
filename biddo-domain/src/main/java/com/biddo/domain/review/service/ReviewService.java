@@ -1,10 +1,9 @@
 package com.biddo.domain.review.service;
 
-import com.biddo.domain.auction.model.Auction;
-import com.biddo.domain.auction.model.AuctionStatus;
+import com.biddo.domain.auction.entity.Auction;
+import com.biddo.domain.auction.entity.AuctionStatus;
 import com.biddo.domain.auction.service.AuctionService;
 import com.biddo.domain.common.exception.BusinessException;
-import com.biddo.domain.member.entity.Member;
 import com.biddo.domain.review.entity.Review;
 import com.biddo.domain.review.exception.ReviewErrorCode;
 import com.biddo.domain.review.repository.ReviewRepository;

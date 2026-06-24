@@ -1,6 +1,6 @@
 package com.biddo.infra.notification;
 
-import com.biddo.domain.notification.model.PriceAlert;
+import com.biddo.domain.notification.entity.PriceAlert;
 import com.biddo.domain.notification.port.out.PriceAlertRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;

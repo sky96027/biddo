@@ -1,6 +1,6 @@
 package com.biddo.domain.review.entity;
 
-import com.biddo.domain.auction.model.Auction;
+import com.biddo.domain.auction.entity.Auction;
 import com.biddo.domain.common.exception.BusinessException;
 import com.biddo.domain.member.entity.Member;
 import com.biddo.domain.review.exception.ReviewErrorCode;

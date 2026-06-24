@@ -1,6 +1,6 @@
 package com.biddo.domain.notification.port.out;
 
-import com.biddo.domain.notification.model.Notification;
+import com.biddo.domain.notification.entity.Notification;
 
 import java.util.List;
 import java.util.Optional;

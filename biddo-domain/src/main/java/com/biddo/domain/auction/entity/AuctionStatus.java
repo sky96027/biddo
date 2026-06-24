@@ -1,4 +1,4 @@
-package com.biddo.domain.auction.model;
+package com.biddo.domain.auction.entity;
 
 public enum AuctionStatus {
     PENDING,

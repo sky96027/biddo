@@ -1,6 +1,6 @@
 package com.biddo.domain.category.service;
 
-import com.biddo.domain.auction.model.Auction;
+import com.biddo.domain.auction.entity.Auction;
 import com.biddo.domain.auction.port.out.AuctionRepository;
 import com.biddo.domain.bid.port.out.BidRepository;
 import com.biddo.domain.category.entity.Category;
@@ -128,7 +128,7 @@ class CategoryRecommendationServiceTest {
         Category category = createCategory(categoryId, "cat-" + categoryId);
         Auction auction = Auction.builder()
                 .seller(null).category(category).title("test").description("test")
-                .condition(com.biddo.domain.auction.model.ItemCondition.GOOD)
+                .condition(com.biddo.domain.auction.entity.ItemCondition.GOOD)
                 .startingPrice(10000L)
                 .startTime(java.time.LocalDateTime.now().plusDays(1))
                 .endTime(java.time.LocalDateTime.now().plusDays(2))

@@ -1,6 +1,6 @@
 package com.biddo.domain.notification.port.out;
 
-import com.biddo.domain.notification.model.Notification;
+import com.biddo.domain.notification.entity.Notification;
 
 public interface NotificationPushPort {
 

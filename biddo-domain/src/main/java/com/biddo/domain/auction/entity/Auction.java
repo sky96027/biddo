@@ -1,4 +1,4 @@
-package com.biddo.domain.auction.model;
+package com.biddo.domain.auction.entity;
 
 import com.biddo.domain.auction.exception.AuctionErrorCode;
 import com.biddo.domain.category.entity.Category;

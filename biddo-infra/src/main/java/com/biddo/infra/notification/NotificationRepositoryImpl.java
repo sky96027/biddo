@@ -1,6 +1,6 @@
 package com.biddo.infra.notification;
 
-import com.biddo.domain.notification.model.Notification;
+import com.biddo.domain.notification.entity.Notification;
 import com.biddo.domain.notification.port.out.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;

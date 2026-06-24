@@ -1,6 +1,6 @@
 package com.biddo.infra.bid;
 
-import com.biddo.domain.bid.model.AutoBid;
+import com.biddo.domain.bid.entity.AutoBid;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;

@@ -4,7 +4,7 @@ import com.biddo.domain.common.exception.BusinessException;
 import com.biddo.domain.member.entity.Member;
 import com.biddo.domain.member.service.MemberService;
 import com.biddo.domain.notification.exception.NotificationErrorCode;
-import com.biddo.domain.notification.model.PriceAlert;
+import com.biddo.domain.notification.entity.PriceAlert;
 import com.biddo.domain.notification.port.out.PriceAlertRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
