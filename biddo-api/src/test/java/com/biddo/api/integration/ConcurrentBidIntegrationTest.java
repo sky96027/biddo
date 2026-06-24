@@ -45,6 +45,7 @@ class ConcurrentBidIntegrationTest extends IntegrationTestBase {
 
     @BeforeEach
     void setUp() {
+        jdbcTemplate.execute("SET session_replication_role = 'replica'");
         jdbcTemplate.execute("DELETE FROM bid");
         jdbcTemplate.execute("DELETE FROM auto_bid");
         jdbcTemplate.execute("DELETE FROM chat_message");
@@ -58,6 +59,7 @@ class ConcurrentBidIntegrationTest extends IntegrationTestBase {
         jdbcTemplate.execute("DELETE FROM auction");
         jdbcTemplate.execute("DELETE FROM member");
         jdbcTemplate.execute("DELETE FROM category");
+        jdbcTemplate.execute("SET session_replication_role = 'origin'");
         seller = createMember("seller@test.com", "판매자");
         category = createCategory("전자기기");
     }
