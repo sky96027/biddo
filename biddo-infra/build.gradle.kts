@@ -1,5 +1,6 @@
 dependencies {
     implementation(project(":biddo-domain"))
+    implementation("io.micrometer:micrometer-core")
 
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-data-redis")

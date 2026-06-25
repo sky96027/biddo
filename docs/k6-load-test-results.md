@@ -231,10 +231,35 @@
 
 ---
 
-### Stage 2 — 핵심 입찰 경로 개선 (예정)
+### Stage 2 — 핵심 입찰 경로 개선
 
-#### Round 5 — Redis 락 구간 개선
+#### Round 5 — Redis 락 대기 시간 측정 ✅
 
-- **조치**: 락 대기 시간 Micrometer 측정 후 범위 축소 또는 낙관적 락 도입 → 이슈 [#86](https://github.com/sky96027/biddo/issues/86)
-- **기대 효과**: bid p95 단축, conflict 감소
-- **측정 지표**: bid p95, bid_conflict, throughput
+→ 이슈 [#86](https://github.com/sky96027/biddo/issues/86)
+
+`RedissonAuctionLock`에 Micrometer Timer 추가 (`auction.lock.wait`, `auction.lock.hold`).
+
+**실측 결과 (500 VU)**
+
+| 지표 | 50 VU | 500 VU |
+|------------------|--------|--------|
+| 락 대기(wait) avg | 0.64ms | 7.96ms |
+| 락 보유(hold) avg | 8.6ms | 42.6ms |
+| 락 보유(hold) max | - | 798ms |
+| 타임아웃 | 0 | 0 |
+
+**분석**
+
+- wait < hold — 병목은 경합(wait)이 아니라 락 안 트랜잭션 처리 시간(hold) 자체.
+- 500 VU에서 hold가 8.6ms → 42.6ms로 5배 증가한 원인은 DB 커넥션 풀 경쟁. 락 범위와 무관하게 동시 요청이 커넥션을 잡으려 대기하면서 쿼리 응답이 느려짐.
+- `processAutoBids`가 루프마다 DB 쿼리를 반복 실행하므로 자동입찰 체인이 길수록 hold가 추가 증가.
+
+**개선 방향 검토 및 결정**
+
+| 방향 | 효과 | 트레이드오프 | 결정 |
+|------|------|------------|-------|
+| 락 범위 축소 | 미미 — hold의 2% | 회원 조회만 락 밖으로 뺄 수 있음. 나머지(현재가 검증·저장·자동입찰)는 원자성 보장 필요로 락 안 유지 필수 | **보류** |
+| 낙관적 락 | wait 제거 | 고경합 시 retry storm 위험. `processAutoBids` 체인 전체 재시도 로직 필요. 구조 선행 개선 필요 | **보류** |
+| DB 커넥션 풀 증설 | hold 내 쿼리 대기 감소 | 로컬 단일 인스턴스 환경에서 효과 불명확 | **보류** |
+
+**결론**: 500 VU bid p95 167ms는 Redis 분산 락이 직렬화를 보장하는 구조에서 `processAutoBids`를 포함한 현 설계의 한계치에 가까움. 낙관적 락 도입은 `processAutoBids` 구조 개선을 선행한 후 재검토.
