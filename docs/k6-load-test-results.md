@@ -92,7 +92,7 @@
 | 200 | 67 | 14ms | 30ms | 1,010ms | 15건 | 100% | 141.4 req/s |
 | 500 | 167 | 24ms | 66ms | 1,090ms | 71건 | 100% | 276.6 req/s |
 
-### 3-2. 커넥션 풀 / Consumer concurrency 튜닝 
+### 커넥션 풀 / Consumer concurrency 튜닝
 
 | 설정 | bid p95 | conflict | throughput | 비고 |
 |------|---------|----------|------------|------|
@@ -183,39 +183,20 @@
 | 입찰 — Redis 락 직렬화 | 관찰 | 200 VU까지 주 병목, p95 30ms |
 | 입찰 — 커넥션 풀 | 관찰 | 500 VU에서 pending 24개 발생 |
 | CPU | **포화** | 500 VU System CPU 99.7% |
-| Kafka notification lag | 관찰 | 500 VU 이후 8K lag 누적 |
+| Kafka notification lag | **해소** | Stage 1 배치 처리 후 0으로 감소 |
 
 ---
 
-## 병목 개선 사이클
+## 병목 개선
 
-### Stage 1 — 관측 가능성 확보 및 컨슈머 최적화 (완료)
-
-병목 원인을 제거 가능한 단계부터 순서대로 처리.
-
-#### Round 1 — DEBUG 로깅 제거 ✅
-
-- **조치**: 운영/테스트 프로파일에서 Hibernate SQL 로그 레벨 DEBUG → INFO
-- **효과**: CPU 오버헤드 감소, 고부하 시 DEBUG 4,236/s → 제거
-
-#### Round 2 — Tomcat 스레드 풀 튜닝 ✅
-
-- **조치**: `server.tomcat.threads.max` 조정 (기본값 200 → 150)
-- **효과**: 500 VU 구간 불필요한 스레드 생성 억제
-
-#### Round 3 — 커넥션 풀 조정 ✅
-
-- **조치**: `maximum-pool-size` 20 유지, `minimum-idle` 조정
-- **결과**: 500 VU pending 24개 발생했어도 timeout 0건 확인 → 현 설정 유지
-
-#### Round 4 — Notification consumer 배치 처리 ✅
+### Stage 1 — Notification 컨슈머 배치 처리 (완료)
 
 - **조치**: Kafka 배치 리스너 도입 + `saveAll()` bulk INSERT → 이슈 [#85](https://github.com/sky96027/biddo/issues/85)
   - `batchKafkaListenerContainerFactory` (concurrency=3) 추가
   - `BidEventConsumer`, `AuctionEventConsumer` 배치 처리 리팩터링
   - 배치 내 경매 조회 N회 → 1회 (`findByIdIn`) 및 알림 단건 INSERT → 일괄 INSERT
 
-**500 VU 재측정 결과 (Round 1~4 적용 후)**
+**500 VU 재측정 결과**
 
 | 지표 | 적용 전 | 적용 후 | 변화 |
 |---------------|------------|------------|--------------------------|
@@ -227,13 +208,12 @@
 | bid-events lag | **8,040** | **0** | **완전 해소** |
 
 > bid p95가 소폭 증가한 것은 누적 경매 데이터로 DB 스캔 범위가 늘었기 때문. conflict 증가도 반복 횟수(11,416 → 27,928) 증가에 비례하며 충돌률은 0.62% → 0.77%로 유사.
+> bid-events lag: 적용 전은 500 VU 테스트 종료 시점 누적 수치, 적용 후는 배치 처리 도입 후 동일 조건 재측정 종료 시점 기준.
 > 핵심 성과: **bid-events 컨슈머 랙 8K → 0**, **max 응답시간 1,090ms → 451ms**.
 
 ---
 
 ### Stage 2 — 핵심 입찰 경로 개선
-
-#### Round 5 — Redis 락 대기 시간 측정 ✅
 
 → 이슈 [#86](https://github.com/sky96027/biddo/issues/86)
 
@@ -244,9 +224,11 @@
 | 지표 | 50 VU | 500 VU |
 |------------------|--------|--------|
 | 락 대기(wait) avg | 0.64ms | 7.96ms |
+| 락 대기(wait) max | - | 967ms |
 | 락 보유(hold) avg | 8.6ms | 42.6ms |
 | 락 보유(hold) max | - | 798ms |
 | 타임아웃 | 0 | 0 |
+| bid p95 | 20ms | 167ms |
 
 **분석**
 
