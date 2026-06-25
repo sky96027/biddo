@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -136,6 +137,47 @@ class NotificationServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(NotificationErrorCode.NOTIFICATION_NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("배치 알림 생성 성공 - 전체 saveAll + 각각 push")
+    void createAll_success() {
+        // given
+        Member receiver2 = Member.builder().email("user2@test.com").password("encoded").nickname("user2").build();
+        setId(receiver2, 2L);
+
+        List<NotificationService.NotificationSpec> specs = List.of(
+                new NotificationService.NotificationSpec(receiver, 100L, NotificationType.BID, "입찰 알림"),
+                new NotificationService.NotificationSpec(receiver2, 100L, NotificationType.OUTBID, "추월 알림")
+        );
+
+        Notification n1 = Notification.builder().receiver(receiver).auctionId(100L)
+                .type(NotificationType.BID).message("입찰 알림").build();
+        setId(n1, 1L);
+        Notification n2 = Notification.builder().receiver(receiver2).auctionId(100L)
+                .type(NotificationType.OUTBID).message("추월 알림").build();
+        setId(n2, 2L);
+
+        given(notificationRepository.saveAll(any())).willReturn(List.of(n1, n2));
+
+        // when
+        notificationService.createAll(specs);
+
+        // then
+        verify(notificationRepository).saveAll(any());
+        verify(notificationPushPort).push(eq(1L), eq(n1));
+        verify(notificationPushPort).push(eq(2L), eq(n2));
+    }
+
+    @Test
+    @DisplayName("배치 알림 생성 - 빈 목록이면 saveAll 호출 없음")
+    void createAll_emptySpecs_noSave() {
+        // when
+        notificationService.createAll(List.of());
+
+        // then
+        verify(notificationRepository, never()).saveAll(any());
+        verify(notificationPushPort, never()).push(any(), any());
     }
 
     @Test

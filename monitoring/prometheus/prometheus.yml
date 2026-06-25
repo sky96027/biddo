@@ -10,3 +10,8 @@ scrape_configs:
       - targets: ['host.docker.internal:9090']
         labels:
           application: 'biddo'
+
+  - job_name: 'kafka-exporter'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['kafka-exporter:9308']

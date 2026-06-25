@@ -3,10 +3,22 @@ package com.biddo.infra.kafka;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.config.TopicBuilder;
+import org.springframework.kafka.core.ConsumerFactory;
 
 @Configuration
 public class KafkaConfig {
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, Object> batchKafkaListenerContainerFactory(
+            ConsumerFactory<String, Object> consumerFactory) {
+        var factory = new ConcurrentKafkaListenerContainerFactory<String, Object>();
+        factory.setConsumerFactory(consumerFactory);
+        factory.setBatchListener(true);
+        factory.setConcurrency(3);
+        return factory;
+    }
 
     public static final String BID_EVENTS = "bid-events";
     public static final String AUCTION_EVENTS = "auction-events";
