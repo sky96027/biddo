@@ -13,13 +13,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -33,7 +34,6 @@ public class BidEventConsumer {
     private final MemberRepository memberRepository;
     private final NotificationService notificationService;
 
-    @Transactional
     @KafkaListener(
             topics = KafkaConfig.BID_EVENTS,
             groupId = "biddo-notification",
@@ -42,7 +42,13 @@ public class BidEventConsumer {
     public void handleBidEvents(List<BidEvent> events) {
         log.debug("Processing bid event batch: size={}", events.size());
 
-        List<Long> auctionIds = events.stream()
+        List<BidEvent> bidPlacedEvents = events.stream()
+                .filter(e -> BidEvent.BID_PLACED.equals(e.getEventType()))
+                .toList();
+
+        if (bidPlacedEvents.isEmpty()) return;
+
+        List<Long> auctionIds = bidPlacedEvents.stream()
                 .map(BidEvent::getAuctionId)
                 .distinct()
                 .toList();
@@ -50,19 +56,30 @@ public class BidEventConsumer {
         Map<Long, Auction> auctionMap = auctionRepository.findByIdIn(auctionIds).stream()
                 .collect(Collectors.toMap(Auction::getId, Function.identity()));
 
+        Map<Long, List<Long>> bidderIdsByAuction = bidRepository.findDistinctBidderIdsByAuctionIdIn(auctionIds);
+
+        Set<Long> allOutbidMemberIds = new HashSet<>();
+        for (BidEvent event : bidPlacedEvents) {
+            Auction auction = auctionMap.get(event.getAuctionId());
+            if (auction == null) continue;
+            List<Long> bidderIds = new ArrayList<>(bidderIdsByAuction.getOrDefault(event.getAuctionId(), List.of()));
+            bidderIds.remove(event.getBidderId());
+            bidderIds.remove(auction.getSeller().getId());
+            allOutbidMemberIds.addAll(bidderIds);
+        }
+
+        Map<Long, Member> memberMap = memberRepository.findAllById(new ArrayList<>(allOutbidMemberIds)).stream()
+                .collect(Collectors.toMap(Member::getId, Function.identity()));
+
         List<NotificationService.NotificationSpec> specs = new ArrayList<>();
-
-        for (BidEvent event : events) {
+        for (BidEvent event : bidPlacedEvents) {
             try {
-                if (!BidEvent.BID_PLACED.equals(event.getEventType())) continue;
-
                 Auction auction = auctionMap.get(event.getAuctionId());
                 if (auction == null) {
                     log.warn("Auction not found: auctionId={}", event.getAuctionId());
                     continue;
                 }
-
-                collectSpecs(event, auction, specs);
+                collectSpecs(event, auction, bidderIdsByAuction, memberMap, specs);
             } catch (Exception e) {
                 log.error("Failed to process bid event: auctionId={}, bidderId={}",
                         event.getAuctionId(), event.getBidderId(), e);
@@ -72,7 +89,10 @@ public class BidEventConsumer {
         notificationService.createAll(specs);
     }
 
-    private void collectSpecs(BidEvent event, Auction auction, List<NotificationService.NotificationSpec> specs) {
+    private void collectSpecs(BidEvent event, Auction auction,
+                              Map<Long, List<Long>> bidderIdsByAuction,
+                              Map<Long, Member> memberMap,
+                              List<NotificationService.NotificationSpec> specs) {
         String formattedAmount = formatPrice(event.getBidAmount());
         String auctionTitle = auction.getTitle();
         Member seller = auction.getSeller();
@@ -84,19 +104,19 @@ public class BidEventConsumer {
             ));
         }
 
-        List<Long> bidderIds = bidRepository.findDistinctBidderIdsByAuctionId(event.getAuctionId());
+        List<Long> bidderIds = new ArrayList<>(bidderIdsByAuction.getOrDefault(event.getAuctionId(), List.of()));
         bidderIds.remove(event.getBidderId());
         bidderIds.remove(seller.getId());
 
-        if (!bidderIds.isEmpty()) {
-            List<Member> outbidMembers = memberRepository.findAllById(bidderIds);
-            outbidMembers.forEach(member ->
-                    specs.add(new NotificationService.NotificationSpec(
-                            member, event.getAuctionId(), NotificationType.OUTBID,
-                            String.format("[%s] 입찰이 추월되었습니다. (현재 최고가: %s원)", auctionTitle, formattedAmount)
-                    ))
-            );
-        }
+        bidderIds.stream()
+                .map(memberMap::get)
+                .filter(member -> member != null)
+                .forEach(member ->
+                        specs.add(new NotificationService.NotificationSpec(
+                                member, event.getAuctionId(), NotificationType.OUTBID,
+                                String.format("[%s] 입찰이 추월되었습니다. (현재 최고가: %s원)", auctionTitle, formattedAmount)
+                        ))
+                );
     }
 
     private String formatPrice(Long price) {

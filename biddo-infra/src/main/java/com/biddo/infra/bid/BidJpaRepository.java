@@ -33,6 +33,9 @@ public interface BidJpaRepository extends JpaRepository<Bid, Long> {
     @Query("SELECT DISTINCT b.bidder.id FROM Bid b WHERE b.auction.id = :auctionId")
     List<Long> findDistinctBidderIdsByAuctionId(@Param("auctionId") Long auctionId);
 
+    @Query("SELECT b.auction.id, b.bidder.id FROM Bid b WHERE b.auction.id IN :auctionIds GROUP BY b.auction.id, b.bidder.id")
+    List<Object[]> findDistinctBidderIdsByAuctionIdIn(@Param("auctionIds") List<Long> auctionIds);
+
     @Query("""
             SELECT a.category.id FROM Bid b JOIN b.auction a
             WHERE b.bidder.id = :bidderId
