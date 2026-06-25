@@ -189,7 +189,7 @@
 
 ## 병목 개선
 
-### Stage 1 — Notification 컨슈머 배치 처리 (완료)
+### Stage 1 — 컨슈머 최적화 (완료)
 
 - **조치**: Kafka 배치 리스너 도입 + `saveAll()` bulk INSERT → 이슈 [#85](https://github.com/sky96027/biddo/issues/85)
   - `batchKafkaListenerContainerFactory` (concurrency=3) 추가
@@ -210,6 +210,29 @@
 > bid p95가 소폭 증가한 것은 누적 경매 데이터로 DB 스캔 범위가 늘었기 때문. conflict 증가도 반복 횟수(11,416 → 27,928) 증가에 비례하며 충돌률은 0.62% → 0.77%로 유사.
 > bid-events lag: 적용 전은 500 VU 테스트 종료 시점 누적 수치, 적용 후는 배치 처리 도입 후 동일 조건 재측정 종료 시점 기준.
 > 핵심 성과: **bid-events 컨슈머 랙 8K → 0**, **max 응답시간 1,090ms → 451ms**.
+
+#### Search Sync 배치 처리
+
+- **조치**: `AuctionSearchConsumer` 단건 → 배치 전환
+  - bid-events: 이벤트당 DB+ES 3회 → 배치 전체 DB 1회 + ES `saveAll` 1회 (auctionId distinct 후 bulk 조회)
+  - auction-events: 이벤트 타입별(index/delete/statusUpdate) 그룹핑 후 각각 bulk 처리
+
+**500 VU 재측정 결과**
+
+| 지표 | 적용 전 | 적용 후 | 변화 |
+|------|---------|---------|------|
+| bid p50 | 27ms | 21ms | -22% |
+| bid p95 | 80ms | **51ms** | **-36%** |
+| bid max | 451ms | **185ms** | **-59%** |
+| search-sync lag | - | **0** | **완전 해소** |
+
+#### Notification 컨슈머 N+1 제거
+
+- **조치**: `BidEventConsumer` 이벤트당 개별 쿼리 → 배치 bulk 쿼리
+  - `findDistinctBidderIdsByAuctionIdIn` 추가 — 경매별 입찰자 ID 1회 bulk 조회
+  - `memberRepository.findAllById` 1회 — OUTBID 대상 멤버 bulk 조회
+  - `@Transactional` 제거 — 읽기 구간 커넥션 점유 분리, bid 처리 경로와의 경합 감소
+- **효과**: 테스트 종료 후 notification lag 드레인 시간 30분 이상 → 1분 이내
 
 ---
 
@@ -245,3 +268,35 @@
 | DB 커넥션 풀 증설 | hold 내 쿼리 대기 감소 | 로컬 단일 인스턴스 환경에서 효과 불명확 | **보류** |
 
 **결론**: 500 VU bid p95 167ms는 Redis 분산 락이 직렬화를 보장하는 구조에서 `processAutoBids`를 포함한 현 설계의 한계치에 가까움. 낙관적 락 도입은 `processAutoBids` 구조 개선을 선행한 후 재검토.
+
+---
+
+## 최종 결과 비교 (500 VU)
+
+최초 측정(튜닝 전) 대비 현재 상태 비교.
+
+### 입찰 응답 시간
+
+| 지표 | 최초 | 현재 | 변화 |
+|------|------|------|------|
+| bid p50 | 24ms | 26ms | +2ms |
+| bid p95 | 66ms | 84ms | +18ms |
+| bid max | 1,090ms | 353ms | **-68%** |
+| throughput | 276.6 req/s | 286.3 req/s | +3.5% |
+
+> bid p95가 소폭 증가한 것은 반복 테스트로 누적된 DB 레코드 증가로 스캔 범위가 늘었기 때문. 최초 측정 시점(경매 ~100개 미만, 입찰 ~11,000건)과 현재(경매 1,826개, 입찰 약 297,000건)의 데이터 규모 차이가 크므로 단순 수치 비교는 불리한 조건이 반영된 결과.
+
+### 컨슈머 상태
+
+| 컨슈머 | 최초 | 현재 |
+|--------|------|------|
+| biddo-notification (bid-events) | 8,040 lag, 30분 이상 드레인 불가 | 테스트 종료 후 1분 이내 드레인 |
+| search-sync (bid-events) | ~9,000 lag | **0** |
+
+### 개선 요약
+
+| 항목 | 내용 |
+|------|------|
+| 핵심 성과 | bid max 1,090ms → 353ms (-68%), 컨슈머 랙 전면 해소 |
+| bid p95 증가 원인 | 누적 데이터 증가에 따른 DB 스캔 범위 확대 (테스트 환경 특성) |
+| 남은 병목 | Redis 락 hold 시간 (avg 42.6ms @ 500 VU) — `processAutoBids` 구조 개선 후 재검토 |
