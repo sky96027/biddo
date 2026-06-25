@@ -13,11 +13,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -29,45 +34,89 @@ public class BidEventConsumer {
     private final MemberRepository memberRepository;
     private final NotificationService notificationService;
 
-    @Transactional
-    @KafkaListener(topics = KafkaConfig.BID_EVENTS, groupId = "biddo-notification")
-    public void handleBidEvent(BidEvent event) {
-        log.info("Received {}: auctionId={}, bidId={}, bidderId={}, amount={}, type={}",
-                event.getEventType(), event.getAuctionId(), event.getBidId(),
-                event.getBidderId(), event.getBidAmount(), event.getBidType());
+    @KafkaListener(
+            topics = KafkaConfig.BID_EVENTS,
+            groupId = "biddo-notification",
+            containerFactory = "batchKafkaListenerContainerFactory"
+    )
+    public void handleBidEvents(List<BidEvent> events) {
+        log.debug("Processing bid event batch: size={}", events.size());
 
-        if (!BidEvent.BID_PLACED.equals(event.getEventType())) {
-            return;
+        List<BidEvent> bidPlacedEvents = events.stream()
+                .filter(e -> BidEvent.BID_PLACED.equals(e.getEventType()))
+                .toList();
+
+        if (bidPlacedEvents.isEmpty()) return;
+
+        List<Long> auctionIds = bidPlacedEvents.stream()
+                .map(BidEvent::getAuctionId)
+                .distinct()
+                .toList();
+
+        Map<Long, Auction> auctionMap = auctionRepository.findByIdIn(auctionIds).stream()
+                .collect(Collectors.toMap(Auction::getId, Function.identity()));
+
+        Map<Long, List<Long>> bidderIdsByAuction = bidRepository.findDistinctBidderIdsByAuctionIdIn(auctionIds);
+
+        Set<Long> allOutbidMemberIds = new HashSet<>();
+        for (BidEvent event : bidPlacedEvents) {
+            Auction auction = auctionMap.get(event.getAuctionId());
+            if (auction == null) continue;
+            List<Long> bidderIds = new ArrayList<>(bidderIdsByAuction.getOrDefault(event.getAuctionId(), List.of()));
+            bidderIds.remove(event.getBidderId());
+            bidderIds.remove(auction.getSeller().getId());
+            allOutbidMemberIds.addAll(bidderIds);
         }
 
-        Auction auction = auctionRepository.findById(event.getAuctionId()).orElse(null);
-        if (auction == null) {
-            log.warn("Auction not found: auctionId={}", event.getAuctionId());
-            return;
-        }
+        Map<Long, Member> memberMap = memberRepository.findAllById(new ArrayList<>(allOutbidMemberIds)).stream()
+                .collect(Collectors.toMap(Member::getId, Function.identity()));
 
-        String formattedAmount = formatPrice(event.getBidAmount());
-        String auctionTitle = auction.getTitle();
-
-        // 판매자에게 BID 알림
-        Member seller = auction.getSeller();
-        if (!seller.getId().equals(event.getBidderId())) {
-            notificationService.create(seller, event.getAuctionId(), NotificationType.BID,
-                    String.format("[%s] 새로운 입찰이 등록되었습니다. (입찰가: %s원)", auctionTitle, formattedAmount));
-        }
-
-        // 다른 입찰자들에게 OUTBID 알림
-        List<Long> bidderIds = bidRepository.findDistinctBidderIdsByAuctionId(event.getAuctionId());
-        bidderIds.remove(event.getBidderId()); // 현재 입찰자 제외
-        bidderIds.remove(seller.getId());      // 판매자 제외 (이미 BID 알림 전송)
-
-        if (!bidderIds.isEmpty()) {
-            List<Member> outbidMembers = memberRepository.findAllById(bidderIds);
-            for (Member member : outbidMembers) {
-                notificationService.create(member, event.getAuctionId(), NotificationType.OUTBID,
-                        String.format("[%s] 입찰이 추월되었습니다. (현재 최고가: %s원)", auctionTitle, formattedAmount));
+        List<NotificationService.NotificationSpec> specs = new ArrayList<>();
+        for (BidEvent event : bidPlacedEvents) {
+            try {
+                Auction auction = auctionMap.get(event.getAuctionId());
+                if (auction == null) {
+                    log.warn("Auction not found: auctionId={}", event.getAuctionId());
+                    continue;
+                }
+                collectSpecs(event, auction, bidderIdsByAuction, memberMap, specs);
+            } catch (Exception e) {
+                log.error("Failed to process bid event: auctionId={}, bidderId={}",
+                        event.getAuctionId(), event.getBidderId(), e);
             }
         }
+
+        notificationService.createAll(specs);
+    }
+
+    private void collectSpecs(BidEvent event, Auction auction,
+                              Map<Long, List<Long>> bidderIdsByAuction,
+                              Map<Long, Member> memberMap,
+                              List<NotificationService.NotificationSpec> specs) {
+        String formattedAmount = formatPrice(event.getBidAmount());
+        String auctionTitle = auction.getTitle();
+        Member seller = auction.getSeller();
+
+        if (!seller.getId().equals(event.getBidderId())) {
+            specs.add(new NotificationService.NotificationSpec(
+                    seller, event.getAuctionId(), NotificationType.BID,
+                    String.format("[%s] 새로운 입찰이 등록되었습니다. (입찰가: %s원)", auctionTitle, formattedAmount)
+            ));
+        }
+
+        List<Long> bidderIds = new ArrayList<>(bidderIdsByAuction.getOrDefault(event.getAuctionId(), List.of()));
+        bidderIds.remove(event.getBidderId());
+        bidderIds.remove(seller.getId());
+
+        bidderIds.stream()
+                .map(memberMap::get)
+                .filter(member -> member != null)
+                .forEach(member ->
+                        specs.add(new NotificationService.NotificationSpec(
+                                member, event.getAuctionId(), NotificationType.OUTBID,
+                                String.format("[%s] 입찰이 추월되었습니다. (현재 최고가: %s원)", auctionTitle, formattedAmount)
+                        ))
+                );
     }
 
     private String formatPrice(Long price) {

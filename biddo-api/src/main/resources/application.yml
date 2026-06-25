@@ -3,10 +3,12 @@ spring:
     name: biddo
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:biddo}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:biddo}?reWriteBatchedInserts=true
     username: ${DB_USERNAME:biddo}
     password: ${DB_PASSWORD:biddo}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 25
 
   jpa:
     hibernate:
@@ -46,6 +48,11 @@ spring:
       auto-offset-reset: earliest
       properties:
         spring.json.trusted.packages: "com.biddo.infra.kafka.event"
+    template:
+      observation-enabled: true
+    listener:
+      observation-enabled: true
+      concurrency: 3
 
 cloud:
   aws:
@@ -60,6 +67,14 @@ cloud:
 
 server:
   port: 9090
+  tomcat:
+    threads:
+      max: 200
+
+logging:
+  level:
+    org.hibernate.SQL: WARN
+    org.hibernate.orm.jdbc.bind: WARN
 
 management:
   endpoints:
@@ -73,6 +88,12 @@ management:
     metrics:
       export:
         enabled: true
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
+  otlp:
+    tracing:
+      endpoint: ${TEMPO_ENDPOINT:http://localhost:4318/v1/traces}
 
 resilience4j:
   circuitbreaker:

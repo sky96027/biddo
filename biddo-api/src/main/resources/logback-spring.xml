@@ -2,7 +2,7 @@
 <configuration>
 
     <property name="LOG_PATH" value="${LOG_PATH:-./logs}"/>
-    <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
+    <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{traceId:- }-%X{spanId:- }] %-5level %logger{36} - %msg%n"/>
 
     <!-- Console -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">

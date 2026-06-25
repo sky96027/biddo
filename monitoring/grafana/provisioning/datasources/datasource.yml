@@ -7,3 +7,13 @@ datasources:
     url: http://prometheus:9090
     isDefault: true
     editable: true
+    jsonData:
+      exemplarTraceIdDestinations:
+        - name: traceID
+          datasourceUid: tempo
+  - name: Tempo
+    type: tempo
+    uid: tempo
+    access: proxy
+    url: http://tempo:3200
+    editable: true

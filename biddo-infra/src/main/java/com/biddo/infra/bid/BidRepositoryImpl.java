@@ -7,7 +7,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Repository
 @RequiredArgsConstructor
@@ -46,6 +48,15 @@ public class BidRepositoryImpl implements BidRepository {
     @Override
     public List<Long> findDistinctBidderIdsByAuctionId(Long auctionId) {
         return bidJpaRepository.findDistinctBidderIdsByAuctionId(auctionId);
+    }
+
+    @Override
+    public Map<Long, List<Long>> findDistinctBidderIdsByAuctionIdIn(List<Long> auctionIds) {
+        return bidJpaRepository.findDistinctBidderIdsByAuctionIdIn(auctionIds).stream()
+                .collect(Collectors.groupingBy(
+                        row -> (Long) row[0],
+                        Collectors.mapping(row -> (Long) row[1], Collectors.toList())
+                ));
     }
 
     @Override
