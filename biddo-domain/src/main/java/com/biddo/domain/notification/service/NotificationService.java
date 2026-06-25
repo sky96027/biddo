@@ -34,6 +34,40 @@ public class NotificationService {
         return saved;
     }
 
+    public record NotificationSpec(Member receiver, Long auctionId, NotificationType type, String message) {}
+
+    @Transactional
+    public void createAll(List<NotificationSpec> specs) {
+        if (specs.isEmpty()) return;
+        List<Notification> notifications = specs.stream()
+                .map(s -> Notification.builder()
+                        .receiver(s.receiver())
+                        .auctionId(s.auctionId())
+                        .type(s.type())
+                        .message(s.message())
+                        .build())
+                .toList();
+        List<Notification> saved = notificationRepository.saveAll(notifications);
+        saved.forEach(n -> notificationPushPort.push(n.getReceiver().getId(), n));
+    }
+
+    @Transactional
+    public void createBulk(List<Member> receivers, Long auctionId, NotificationType type, String message) {
+        if (receivers.isEmpty()) {
+            return;
+        }
+        List<Notification> notifications = receivers.stream()
+                .map(receiver -> Notification.builder()
+                        .receiver(receiver)
+                        .auctionId(auctionId)
+                        .type(type)
+                        .message(message)
+                        .build())
+                .toList();
+        List<Notification> saved = notificationRepository.saveAll(notifications);
+        saved.forEach(n -> notificationPushPort.push(n.getReceiver().getId(), n));
+    }
+
     public List<Notification> findByReceiverId(Long receiverId, Boolean isRead, Long cursor, int size) {
         if (Boolean.FALSE.equals(isRead)) {
             if (cursor == null) {

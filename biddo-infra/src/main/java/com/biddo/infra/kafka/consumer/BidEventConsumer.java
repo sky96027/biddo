@@ -16,8 +16,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.text.NumberFormat;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -30,43 +34,68 @@ public class BidEventConsumer {
     private final NotificationService notificationService;
 
     @Transactional
-    @KafkaListener(topics = KafkaConfig.BID_EVENTS, groupId = "biddo-notification")
-    public void handleBidEvent(BidEvent event) {
-        log.info("Received {}: auctionId={}, bidId={}, bidderId={}, amount={}, type={}",
-                event.getEventType(), event.getAuctionId(), event.getBidId(),
-                event.getBidderId(), event.getBidAmount(), event.getBidType());
+    @KafkaListener(
+            topics = KafkaConfig.BID_EVENTS,
+            groupId = "biddo-notification",
+            containerFactory = "batchKafkaListenerContainerFactory"
+    )
+    public void handleBidEvents(List<BidEvent> events) {
+        log.debug("Processing bid event batch: size={}", events.size());
 
-        if (!BidEvent.BID_PLACED.equals(event.getEventType())) {
-            return;
+        List<Long> auctionIds = events.stream()
+                .map(BidEvent::getAuctionId)
+                .distinct()
+                .toList();
+
+        Map<Long, Auction> auctionMap = auctionRepository.findByIdIn(auctionIds).stream()
+                .collect(Collectors.toMap(Auction::getId, Function.identity()));
+
+        List<NotificationService.NotificationSpec> specs = new ArrayList<>();
+
+        for (BidEvent event : events) {
+            try {
+                if (!BidEvent.BID_PLACED.equals(event.getEventType())) continue;
+
+                Auction auction = auctionMap.get(event.getAuctionId());
+                if (auction == null) {
+                    log.warn("Auction not found: auctionId={}", event.getAuctionId());
+                    continue;
+                }
+
+                collectSpecs(event, auction, specs);
+            } catch (Exception e) {
+                log.error("Failed to process bid event: auctionId={}, bidderId={}",
+                        event.getAuctionId(), event.getBidderId(), e);
+            }
         }
 
-        Auction auction = auctionRepository.findById(event.getAuctionId()).orElse(null);
-        if (auction == null) {
-            log.warn("Auction not found: auctionId={}", event.getAuctionId());
-            return;
-        }
+        notificationService.createAll(specs);
+    }
 
+    private void collectSpecs(BidEvent event, Auction auction, List<NotificationService.NotificationSpec> specs) {
         String formattedAmount = formatPrice(event.getBidAmount());
         String auctionTitle = auction.getTitle();
-
-        // 판매자에게 BID 알림
         Member seller = auction.getSeller();
+
         if (!seller.getId().equals(event.getBidderId())) {
-            notificationService.create(seller, event.getAuctionId(), NotificationType.BID,
-                    String.format("[%s] 새로운 입찰이 등록되었습니다. (입찰가: %s원)", auctionTitle, formattedAmount));
+            specs.add(new NotificationService.NotificationSpec(
+                    seller, event.getAuctionId(), NotificationType.BID,
+                    String.format("[%s] 새로운 입찰이 등록되었습니다. (입찰가: %s원)", auctionTitle, formattedAmount)
+            ));
         }
 
-        // 다른 입찰자들에게 OUTBID 알림
         List<Long> bidderIds = bidRepository.findDistinctBidderIdsByAuctionId(event.getAuctionId());
-        bidderIds.remove(event.getBidderId()); // 현재 입찰자 제외
-        bidderIds.remove(seller.getId());      // 판매자 제외 (이미 BID 알림 전송)
+        bidderIds.remove(event.getBidderId());
+        bidderIds.remove(seller.getId());
 
         if (!bidderIds.isEmpty()) {
             List<Member> outbidMembers = memberRepository.findAllById(bidderIds);
-            for (Member member : outbidMembers) {
-                notificationService.create(member, event.getAuctionId(), NotificationType.OUTBID,
-                        String.format("[%s] 입찰이 추월되었습니다. (현재 최고가: %s원)", auctionTitle, formattedAmount));
-            }
+            outbidMembers.forEach(member ->
+                    specs.add(new NotificationService.NotificationSpec(
+                            member, event.getAuctionId(), NotificationType.OUTBID,
+                            String.format("[%s] 입찰이 추월되었습니다. (현재 최고가: %s원)", auctionTitle, formattedAmount)
+                    ))
+            );
         }
     }
 
