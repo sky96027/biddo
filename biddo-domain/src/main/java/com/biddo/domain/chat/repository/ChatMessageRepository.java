@@ -23,4 +23,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     Optional<ChatMessage> findLatestByRoomId(@Param("roomId") Long roomId);
 
     long countByChatRoomIdAndIdGreaterThan(Long chatRoomId, Long messageId);
+
+    @Query("SELECT cm FROM ChatMessage cm WHERE cm.id IN (SELECT MAX(cm2.id) FROM ChatMessage cm2 WHERE cm2.chatRoom.id IN :roomIds GROUP BY cm2.chatRoom.id)")
+    List<ChatMessage> findLatestByRoomIds(@Param("roomIds") List<Long> roomIds);
 }

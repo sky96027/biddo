@@ -52,9 +52,8 @@ public class CategoryRecommendationService {
         List<Long> auctionIds = priceAlertRepository.findActiveAuctionIdsByMemberId(memberId);
         if (auctionIds.isEmpty()) return;
 
-        for (Long auctionId : auctionIds) {
-            auctionRepository.findById(auctionId)
-                    .ifPresent(auction -> categoryIds.add(auction.getCategory().getId()));
-        }
+        auctionRepository.findByIdIn(auctionIds).stream()
+                .map(auction -> auction.getCategory().getId())
+                .forEach(categoryIds::add);
     }
 }

@@ -3,8 +3,8 @@ package com.biddo.domain.member.service;
 import com.biddo.domain.auction.port.out.AuctionRepository;
 import com.biddo.domain.member.entity.Member;
 import com.biddo.domain.member.repository.MemberRepository;
-import com.biddo.domain.report.repository.ReportRepository;
-import com.biddo.domain.review.repository.ReviewRepository;
+import com.biddo.domain.report.service.ReportService;
+import com.biddo.domain.review.service.ReviewService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,11 +17,9 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class TrustScoreCalculatorTest {
@@ -30,13 +28,13 @@ class TrustScoreCalculatorTest {
     private TrustScoreCalculator trustScoreCalculator;
 
     @Mock
-    private ReviewRepository reviewRepository;
+    private ReviewService reviewService;
 
     @Mock
     private AuctionRepository auctionRepository;
 
     @Mock
-    private ReportRepository reportRepository;
+    private ReportService reportService;
 
     @Mock
     private MemberRepository memberRepository;
@@ -53,10 +51,10 @@ class TrustScoreCalculatorTest {
     @Test
     @DisplayName("모든 요소 반영된 점수 계산")
     void calculate_allFactorsPresent_returnsWeightedScore() {
-        given(reviewRepository.findAverageRatingByRevieweeId(1L)).willReturn(Optional.of(4.0));
+        given(reviewService.getAverageRating(1L)).willReturn(4.0);
         given(auctionRepository.countTotalEndedBySellerId(1L)).willReturn(10L);
         given(auctionRepository.countCompletedBySellerId(1L)).willReturn(8L);
-        given(reportRepository.countResolvedByReportedId(1L)).willReturn(0L);
+        given(reportService.countResolvedByReportedId(1L)).willReturn(0L);
 
         BigDecimal score = trustScoreCalculator.calculate(member);
 
@@ -72,9 +70,9 @@ class TrustScoreCalculatorTest {
     @DisplayName("리뷰 없는 신규 회원 — 가입 기간만 반영")
     void calculate_noReviewNewMember_returnsAccountAgeScoreOnly() {
         ReflectionTestUtils.setField(member, "createdAt", LocalDateTime.now().minusDays(30));
-        given(reviewRepository.findAverageRatingByRevieweeId(1L)).willReturn(Optional.empty());
+        given(reviewService.getAverageRating(1L)).willReturn(0.0);
         given(auctionRepository.countTotalEndedBySellerId(1L)).willReturn(0L);
-        given(reportRepository.countResolvedByReportedId(1L)).willReturn(0L);
+        given(reportService.countResolvedByReportedId(1L)).willReturn(0L);
 
         BigDecimal score = trustScoreCalculator.calculate(member);
 
@@ -85,10 +83,10 @@ class TrustScoreCalculatorTest {
     @Test
     @DisplayName("신고 이력 있으면 감점")
     void calculate_hasResolvedReports_returnsReducedScore() {
-        given(reviewRepository.findAverageRatingByRevieweeId(1L)).willReturn(Optional.of(4.5));
+        given(reviewService.getAverageRating(1L)).willReturn(4.5);
         given(auctionRepository.countTotalEndedBySellerId(1L)).willReturn(10L);
         given(auctionRepository.countCompletedBySellerId(1L)).willReturn(10L);
-        given(reportRepository.countResolvedByReportedId(1L)).willReturn(2L);
+        given(reportService.countResolvedByReportedId(1L)).willReturn(2L);
 
         BigDecimal score = trustScoreCalculator.calculate(member);
 
@@ -103,9 +101,9 @@ class TrustScoreCalculatorTest {
     @Test
     @DisplayName("점수가 0 미만이면 0으로 클램핑")
     void calculate_scoreBelowZero_returnsZero() {
-        given(reviewRepository.findAverageRatingByRevieweeId(1L)).willReturn(Optional.of(0.0));
+        given(reviewService.getAverageRating(1L)).willReturn(0.0);
         given(auctionRepository.countTotalEndedBySellerId(1L)).willReturn(0L);
-        given(reportRepository.countResolvedByReportedId(1L)).willReturn(20L);
+        given(reportService.countResolvedByReportedId(1L)).willReturn(20L);
 
         BigDecimal score = trustScoreCalculator.calculate(member);
 
@@ -116,10 +114,10 @@ class TrustScoreCalculatorTest {
     @DisplayName("점수가 5.0 초과이면 5.0으로 클램핑")
     void calculate_scoreExceedsMax_returnsFive() {
         ReflectionTestUtils.setField(member, "createdAt", LocalDateTime.now().minusDays(500));
-        given(reviewRepository.findAverageRatingByRevieweeId(1L)).willReturn(Optional.of(5.0));
+        given(reviewService.getAverageRating(1L)).willReturn(5.0);
         given(auctionRepository.countTotalEndedBySellerId(1L)).willReturn(100L);
         given(auctionRepository.countCompletedBySellerId(1L)).willReturn(100L);
-        given(reportRepository.countResolvedByReportedId(1L)).willReturn(0L);
+        given(reportService.countResolvedByReportedId(1L)).willReturn(0L);
 
         BigDecimal score = trustScoreCalculator.calculate(member);
 
@@ -130,10 +128,10 @@ class TrustScoreCalculatorTest {
     @DisplayName("recalculateAll — 전체 회원 점수 재계산")
     void recalculateAll_membersExist_updatesAllScores() {
         given(memberRepository.findAll()).willReturn(List.of(member));
-        given(reviewRepository.findAverageRatingByRevieweeId(1L)).willReturn(Optional.of(3.0));
+        given(reviewService.getAverageRating(1L)).willReturn(3.0);
         given(auctionRepository.countTotalEndedBySellerId(1L)).willReturn(5L);
         given(auctionRepository.countCompletedBySellerId(1L)).willReturn(4L);
-        given(reportRepository.countResolvedByReportedId(1L)).willReturn(0L);
+        given(reportService.countResolvedByReportedId(1L)).willReturn(0L);
 
         trustScoreCalculator.recalculateAll();
 
@@ -144,10 +142,10 @@ class TrustScoreCalculatorTest {
     @Test
     @DisplayName("거래 완료율 100% — 만점 반영")
     void calculate_perfectCompletionRate_returnsHighScore() {
-        given(reviewRepository.findAverageRatingByRevieweeId(1L)).willReturn(Optional.of(5.0));
+        given(reviewService.getAverageRating(1L)).willReturn(5.0);
         given(auctionRepository.countTotalEndedBySellerId(1L)).willReturn(20L);
         given(auctionRepository.countCompletedBySellerId(1L)).willReturn(20L);
-        given(reportRepository.countResolvedByReportedId(1L)).willReturn(0L);
+        given(reportService.countResolvedByReportedId(1L)).willReturn(0L);
 
         BigDecimal score = trustScoreCalculator.calculate(member);
 

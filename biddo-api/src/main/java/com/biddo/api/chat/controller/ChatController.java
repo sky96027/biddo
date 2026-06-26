@@ -6,7 +6,6 @@ import com.biddo.api.common.response.ApiResponse;
 import com.biddo.api.common.response.CursorResponse;
 import com.biddo.api.common.security.CustomUserDetails;
 import com.biddo.domain.chat.entity.ChatMessage;
-import com.biddo.domain.chat.entity.ChatRoom;
 import com.biddo.domain.chat.service.ChatService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -29,16 +28,9 @@ public class ChatController {
     public ApiResponse<List<ChatRoomResponse>> getMyRooms(
             @AuthenticationPrincipal CustomUserDetails userDetails) {
         Long memberId = userDetails.getMemberId();
-        List<ChatRoom> rooms = chatService.findMyRooms(memberId);
-
-        List<ChatRoomResponse> responses = rooms.stream()
-                .map(room -> {
-                    ChatMessage lastMsg = chatService.getLatestMessage(room.getId());
-                    long unread = chatService.getUnreadCount(room.getId(), memberId);
-                    return ChatRoomResponse.of(room, memberId, lastMsg, unread);
-                })
+        List<ChatRoomResponse> responses = chatService.findMyRoomsWithSummary(memberId).stream()
+                .map(s -> ChatRoomResponse.of(s.room(), memberId, s.latestMessage(), s.unreadCount()))
                 .toList();
-
         return ApiResponse.success(responses);
     }
 
