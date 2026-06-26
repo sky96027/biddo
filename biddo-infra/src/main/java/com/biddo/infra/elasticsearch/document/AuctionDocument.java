@@ -5,14 +5,12 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.elasticsearch.annotations.DateFormat;
-import org.springframework.data.elasticsearch.annotations.Document;
-import org.springframework.data.elasticsearch.annotations.Field;
-import org.springframework.data.elasticsearch.annotations.FieldType;
+import org.springframework.data.elasticsearch.annotations.*;
 
 import java.time.LocalDateTime;
 
 @Document(indexName = "auctions")
+@Setting(settingPath = "elasticsearch/auction-settings.json")
 @Getter
 @Builder
 @NoArgsConstructor
@@ -22,10 +20,13 @@ public class AuctionDocument {
     @Id
     private Long id;
 
-    @Field(type = FieldType.Text, analyzer = "standard")
+    @MultiField(
+        mainField = @Field(type = FieldType.Text, analyzer = "nori_analyzer"),
+        otherFields = @InnerField(suffix = "keyword", type = FieldType.Keyword)
+    )
     private String title;
 
-    @Field(type = FieldType.Text, analyzer = "standard")
+    @Field(type = FieldType.Text, analyzer = "nori_analyzer")
     private String description;
 
     @Field(type = FieldType.Keyword)

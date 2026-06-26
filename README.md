@@ -37,6 +37,7 @@ biddo/
 ### 경매
 - 경매 등록/수정/취소 (PENDING 상태에서만 수정/취소 가능)
 - Redis TTL 기반 경매 상태 전환 (PENDING → ACTIVE → ENDED/SOLD) + 보완 스케줄러
+- 생명주기 메트릭: TTL vs 스케줄러 경로별 처리 건수 Micrometer Counter (`auction.lifecycle.processed`)
 - 스나이핑 방지: 종료 10분 전 입찰 시 +10분 연장
 
 ### 입찰
@@ -47,6 +48,8 @@ biddo/
 
 ### 검색
 - Elasticsearch 기반 전문 검색 (키워드, 카테고리, 가격, 마감 임박 필터)
+- Nori 형태소 분석기: 한국어 복합어 분리 및 조사 제거로 띄어쓰기·어미 변형 무관 검색
+- function_score 커스텀 스코어링: 입찰 수(log1p) + 마감 임박(gauss decay 3d) 가중치로 인기·마감 임박 상품 우선 노출
 - Resilience4j CircuitBreaker: ES 장애 시 DB fallback
 - 최근 검색어 관리 (Redis)
 
@@ -127,6 +130,23 @@ Swagger UI: `http://localhost:9090/swagger-ui/index.html`
 - [프로젝트 구조 & 코딩 컨벤션](docs/spec/프로젝트_구조&코딩_컨벤션.md)
 - [요구사항 목록](docs/spec/requirements.md)
 - [이슈 트래킹](https://github.com/sky96027/biddo/issues)
+
+## 성능 최적화
+
+### DB 인덱스 검증 (PostgreSQL)
+EXPLAIN ANALYZE로 주요 쿼리 실측 후 누락·불일치 인덱스를 수정.
+
+| 수정 내용 | 개선 전 | 개선 후 |
+|-----------|---------|---------|
+| `idx_auction_status_start_time` 추가 — `findPendingAuctionsToActivate` | Seq Scan 12.5ms | Bitmap Index Scan 0.042ms (**298x**) |
+| `idx_notification_receiver_id` ORDER BY 컬럼 일치 (`created_at` → `notification_id DESC`) | PK 역방향 스캔 61.7s (18M rows) | Index Scan 0.07ms (**880,000x**) |
+| `idx_bid_auction_id` 교체 — Sort 제거 | 1.77ms (Sort 포함) | 0.127ms (**14x**) |
+
+### Kafka 컨슈머 배치 최적화
+검색 동기화·알림 컨슈머 개별 처리 → 배치 처리 전환, 단건 조회 → `findAllById` 일괄 조회.
+
+### Redis 락 메트릭
+Redisson 락 대기·보유 시간 Micrometer 측정 (`bid.lock.wait`, `bid.lock.hold`).
 
 ## Git 컨벤션
 

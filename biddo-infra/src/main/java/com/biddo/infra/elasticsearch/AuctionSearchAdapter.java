@@ -19,8 +19,8 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
-import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
+import co.elastic.clients.elasticsearch._types.Time;
+import co.elastic.clients.elasticsearch._types.query_dsl.*;
 
 @Slf4j
 @Component
@@ -80,12 +80,13 @@ public class AuctionSearchAdapter implements AuctionSearchPort {
 
     private NativeQuery buildQuery(AuctionSearchCondition condition) {
         BoolQuery.Builder boolQuery = QueryBuilders.bool();
+        boolean hasKeyword = condition.getKeyword() != null && !condition.getKeyword().isBlank();
 
         // ACTIVE 상태만 검색
         boolQuery.filter(f -> f.term(t -> t.field("status").value("ACTIVE")));
 
         // 키워드 검색
-        if (condition.getKeyword() != null && !condition.getKeyword().isBlank()) {
+        if (hasKeyword) {
             boolQuery.must(m -> m.multiMatch(mm -> mm
                     .query(condition.getKeyword())
                     .fields("title^2", "description")
@@ -125,39 +126,59 @@ public class AuctionSearchAdapter implements AuctionSearchPort {
             }
         }
 
-        NativeQueryBuilder queryBuilder = NativeQuery.builder()
-                .withQuery(q -> q.bool(boolQuery.build()));
-
-        // 정렬
-        Sort sort = resolveSort(condition.getSort());
-        queryBuilder.withSort(sort);
-
         // 페이지네이션 (cursor = auctionId 기반)
         int size = Math.min(condition.getSize(), 100);
         if (condition.getCursor() != null) {
-            // search_after를 위해 size+1로 조회하지 않고, cursor 이후 필터
             boolQuery.filter(f -> f.range(r -> r.number(n -> n
                     .field("id")
                     .lt(condition.getCursor().doubleValue())
             )));
         }
 
-        queryBuilder.withQuery(q -> q.bool(boolQuery.build()));
+        // 인기도(bidCount log1p)와 마감임박(gauss endTime) 가중치를 bool 쿼리에 적용
+        Query boolQueryObj = Query.of(q -> q.bool(boolQuery.build()));
+        Query scoringQuery = Query.of(q -> q.functionScore(fs -> fs
+                .query(boolQueryObj)
+                .functions(List.of(
+                        FunctionScore.of(f -> f.fieldValueFactor(fvf -> fvf
+                                .field("bidCount")
+                                .factor(1.2)
+                                .modifier(FieldValueFactorModifier.Log1p)
+                                .missing(0.0)
+                        )),
+                        FunctionScore.of(f -> f.gauss(g -> g
+                                .date(d -> d
+                                        .field("endTime")
+                                        .placement(p -> p
+                                                .origin("now")
+                                                .scale(Time.of(t -> t.time("3d")))
+                                        )
+                                )
+                        ))
+                ))
+                .scoreMode(FunctionScoreMode.Sum)
+                .boostMode(FunctionBoostMode.Multiply)
+        ));
+
+        NativeQueryBuilder queryBuilder = NativeQuery.builder();
+        queryBuilder.withQuery(scoringQuery);
+        queryBuilder.withSort(resolveSort(condition.getSort(), hasKeyword));
         queryBuilder.withPageable(PageRequest.of(0, size));
 
         return queryBuilder.build();
     }
 
-    private Sort resolveSort(String sortParam) {
-        if (sortParam == null) {
-            return Sort.by(Sort.Direction.DESC, "id");
+    private Sort resolveSort(String sortParam, boolean hasKeyword) {
+        if (sortParam != null) {
+            return switch (sortParam) {
+                case "BID_COUNT" -> Sort.by(Sort.Direction.DESC, "bidCount").and(Sort.by(Sort.Direction.DESC, "id"));
+                case "END_TIME" -> Sort.by(Sort.Direction.ASC, "endTime").and(Sort.by(Sort.Direction.DESC, "id"));
+                case "PRICE" -> Sort.by(Sort.Direction.ASC, "currentPrice").and(Sort.by(Sort.Direction.DESC, "id"));
+                default -> Sort.by(Sort.Direction.DESC, "id");
+            };
         }
-        return switch (sortParam) {
-            case "BID_COUNT" -> Sort.by(Sort.Direction.DESC, "bidCount").and(Sort.by(Sort.Direction.DESC, "id"));
-            case "END_TIME" -> Sort.by(Sort.Direction.ASC, "endTime").and(Sort.by(Sort.Direction.DESC, "id"));
-            case "PRICE" -> Sort.by(Sort.Direction.ASC, "currentPrice").and(Sort.by(Sort.Direction.DESC, "id"));
-            default -> Sort.by(Sort.Direction.DESC, "id");
-        };
+        // 키워드 검색 시 relevance 정렬, 브라우징 시 최신순
+        return hasKeyword ? Sort.by(Sort.Direction.DESC, "_score") : Sort.by(Sort.Direction.DESC, "id");
     }
 
     private LocalDateTime calculateDeadline(String endWithin) {

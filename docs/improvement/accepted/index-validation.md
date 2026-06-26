@@ -1,5 +1,6 @@
 # 인덱스 실효성 검증 결과
 
+> **상태**: ✅ 완료 (PR #91, 2026-06-26)
 > 관련 이슈: #62
 > 작성일: 2026-06-26
 > 검증 방법: 정적 쿼리 분석 + EXPLAIN ANALYZE (scripts/sql/02_explain_analyze.sql)
