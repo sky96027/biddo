@@ -13,6 +13,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -46,8 +49,30 @@ public class ChatService {
         return chatRoom;
     }
 
+    public record ChatRoomSummary(ChatRoom room, ChatMessage latestMessage, long unreadCount) {}
+
     public List<ChatRoom> findMyRooms(Long memberId) {
         return chatRoomRepository.findByMemberId(memberId);
+    }
+
+    public List<ChatRoomSummary> findMyRoomsWithSummary(Long memberId) {
+        List<ChatRoom> rooms = chatRoomRepository.findByMemberId(memberId);
+        if (rooms.isEmpty()) return List.of();
+
+        List<Long> roomIds = rooms.stream().map(ChatRoom::getId).toList();
+        Map<Long, ChatMessage> latestMessages = chatMessageRepository.findLatestByRoomIds(roomIds)
+                .stream()
+                .collect(Collectors.toMap(msg -> msg.getChatRoom().getId(), Function.identity()));
+
+        return rooms.stream()
+                .map(room -> {
+                    ChatMessage latestMsg = latestMessages.get(room.getId());
+                    Long lastReadId = room.getLastReadMessageId(memberId);
+                    long unread = chatMessageRepository.countByChatRoomIdAndIdGreaterThan(
+                            room.getId(), lastReadId != null ? lastReadId : 0L);
+                    return new ChatRoomSummary(room, latestMsg, unread);
+                })
+                .toList();
     }
 
     public List<ChatMessage> findMessages(Long roomId, Long memberId, Long cursor, int size) {

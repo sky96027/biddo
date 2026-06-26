@@ -15,7 +15,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
@@ -61,7 +60,7 @@ class CategoryRecommendationServiceTest {
         given(priceAlertRepository.findActiveAuctionIdsByMemberId(1L)).willReturn(List.of(100L));
 
         Auction auction = createAuctionWithCategory(100L, 2L);
-        given(auctionRepository.findById(100L)).willReturn(Optional.of(auction));
+        given(auctionRepository.findByIdIn(List.of(100L))).willReturn(List.of(auction));
 
         Category cat1 = createCategory(1L, "전자기기");
         Category cat2 = createCategory(2L, "패션/의류");
@@ -79,7 +78,7 @@ class CategoryRecommendationServiceTest {
         given(priceAlertRepository.findActiveAuctionIdsByMemberId(1L)).willReturn(List.of(100L));
 
         Auction auction = createAuctionWithCategory(100L, 1L);
-        given(auctionRepository.findById(100L)).willReturn(Optional.of(auction));
+        given(auctionRepository.findByIdIn(List.of(100L))).willReturn(List.of(auction));
 
         Category cat1 = createCategory(1L, "전자기기");
         Category cat2 = createCategory(2L, "패션/의류");

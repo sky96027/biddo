@@ -15,8 +15,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -36,11 +41,19 @@ public class AuctionEventConsumer {
     public void handleAuctionEvents(List<AuctionEvent> events) {
         log.debug("Processing auction event batch: size={}", events.size());
 
+        Set<Long> memberIds = new HashSet<>();
+        for (AuctionEvent event : events) {
+            if (event.getSellerId() != null) memberIds.add(event.getSellerId());
+            if (event.getWinnerId() != null) memberIds.add(event.getWinnerId());
+        }
+        Map<Long, Member> memberMap = memberRepository.findAllById(memberIds).stream()
+                .collect(Collectors.toMap(Member::getId, Function.identity()));
+
         List<NotificationService.NotificationSpec> specs = new ArrayList<>();
 
         for (AuctionEvent event : events) {
             try {
-                collectSpecs(event, specs);
+                collectSpecs(event, specs, memberMap);
             } catch (Exception e) {
                 log.error("Failed to process auction event: auctionId={}, type={}",
                         event.getAuctionId(), event.getEventType(), e);
@@ -50,21 +63,21 @@ public class AuctionEventConsumer {
         notificationService.createAll(specs);
     }
 
-    private void collectSpecs(AuctionEvent event, List<NotificationService.NotificationSpec> specs) {
+    private void collectSpecs(AuctionEvent event, List<NotificationService.NotificationSpec> specs,
+                               Map<Long, Member> memberMap) {
         switch (event.getEventType()) {
-            case AuctionEvent.AUCTION_SOLD -> collectSoldSpecs(event, specs);
-            case AuctionEvent.AUCTION_ENDED -> collectEndedSpecs(event, specs);
+            case AuctionEvent.AUCTION_SOLD -> collectSoldSpecs(event, specs, memberMap);
+            case AuctionEvent.AUCTION_ENDED -> collectEndedSpecs(event, specs, memberMap);
             case AuctionEvent.AUCTION_CANCELLED -> collectCancelledSpecs(event, specs);
             default -> log.debug("Ignoring event type: {}", event.getEventType());
         }
     }
 
-    private void collectSoldSpecs(AuctionEvent event, List<NotificationService.NotificationSpec> specs) {
+    private void collectSoldSpecs(AuctionEvent event, List<NotificationService.NotificationSpec> specs,
+                                   Map<Long, Member> memberMap) {
         String formattedPrice = formatPrice(event.getCurrentPrice());
-        Member seller = memberRepository.findById(event.getSellerId()).orElse(null);
-        Member winner = event.getWinnerId() != null
-                ? memberRepository.findById(event.getWinnerId()).orElse(null)
-                : null;
+        Member seller = memberMap.get(event.getSellerId());
+        Member winner = event.getWinnerId() != null ? memberMap.get(event.getWinnerId()) : null;
 
         if (winner != null) {
             specs.add(new NotificationService.NotificationSpec(
@@ -82,12 +95,13 @@ public class AuctionEventConsumer {
         collectOtherBidderSpecs(event, "경매가 즉시 구매로 종료되었습니다.", specs);
     }
 
-    private void collectEndedSpecs(AuctionEvent event, List<NotificationService.NotificationSpec> specs) {
-        Member seller = memberRepository.findById(event.getSellerId()).orElse(null);
+    private void collectEndedSpecs(AuctionEvent event, List<NotificationService.NotificationSpec> specs,
+                                    Map<Long, Member> memberMap) {
+        Member seller = memberMap.get(event.getSellerId());
 
         if (event.getWinnerId() != null) {
             String formattedPrice = formatPrice(event.getCurrentPrice());
-            Member winner = memberRepository.findById(event.getWinnerId()).orElse(null);
+            Member winner = memberMap.get(event.getWinnerId());
 
             if (winner != null) {
                 specs.add(new NotificationService.NotificationSpec(

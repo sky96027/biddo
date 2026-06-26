@@ -3,7 +3,7 @@ package com.biddo.domain.report.service;
 import com.biddo.domain.auction.service.AuctionService;
 import com.biddo.domain.common.exception.BusinessException;
 import com.biddo.domain.member.entity.Member;
-import com.biddo.domain.member.repository.MemberRepository;
+import com.biddo.domain.member.service.MemberService;
 import com.biddo.domain.report.entity.Report;
 import com.biddo.domain.report.entity.ReportReason;
 import com.biddo.domain.report.entity.ReportStatus;
@@ -34,7 +34,7 @@ class ReportServiceTest {
     private ReportRepository reportRepository;
 
     @Mock
-    private MemberRepository memberRepository;
+    private MemberService memberService;
 
     @Mock
     private AuctionService auctionService;
@@ -54,8 +54,8 @@ class ReportServiceTest {
     @Test
     @DisplayName("신고 접수 성공")
     void create_validInput_returnsSavedReport() {
-        given(memberRepository.findById(1L)).willReturn(Optional.of(reporter));
-        given(memberRepository.findById(2L)).willReturn(Optional.of(reported));
+        given(memberService.findById(1L)).willReturn(reporter);
+        given(memberService.findById(2L)).willReturn(reported);
         given(reportRepository.save(any(Report.class))).willAnswer(inv -> {
             Report r = inv.getArgument(0);
             setId(r, 1L);
