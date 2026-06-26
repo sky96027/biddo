@@ -12,8 +12,8 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "bid", indexes = {
         @Index(name = "idx_bid_auction_amount", columnList = "auction_id, bid_amount DESC"),
-        @Index(name = "idx_bid_bidder", columnList = "bidder_id"),
-        @Index(name = "idx_bid_auction_created", columnList = "auction_id, created_at")
+        @Index(name = "idx_bid_auction_id", columnList = "auction_id, bid_id DESC"),
+        @Index(name = "idx_bid_bidder", columnList = "bidder_id")
 })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
