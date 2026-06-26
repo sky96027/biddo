@@ -3,6 +3,8 @@ package com.biddo.infra.scheduler;
 import com.biddo.domain.auction.entity.Auction;
 import com.biddo.domain.auction.port.out.AuctionRepository;
 import com.biddo.domain.auction.service.AuctionService;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -18,6 +20,7 @@ public class AuctionLifecycleScheduler {
 
     private final AuctionRepository auctionRepository;
     private final AuctionService auctionService;
+    private final MeterRegistry meterRegistry;
 
     @Scheduled(fixedRate = 60_000)
     public void processAuctionLifecycle() {
@@ -27,6 +30,7 @@ public class AuctionLifecycleScheduler {
         for (Auction auction : toActivate) {
             try {
                 auctionService.activateAuction(auction.getId());
+                lifecycle("activate", "scheduler").increment();
                 log.info("Scheduler activated auction: auctionId={}", auction.getId());
             } catch (Exception e) {
                 log.error("Scheduler failed to activate auction: auctionId={}", auction.getId(), e);
@@ -37,6 +41,7 @@ public class AuctionLifecycleScheduler {
         for (Auction auction : toEnd) {
             try {
                 auctionService.endAuction(auction.getId());
+                lifecycle("end", "scheduler").increment();
                 log.info("Scheduler ended auction: auctionId={}", auction.getId());
             } catch (Exception e) {
                 log.error("Scheduler failed to end auction: auctionId={}", auction.getId(), e);
@@ -46,5 +51,12 @@ public class AuctionLifecycleScheduler {
         if (!toActivate.isEmpty() || !toEnd.isEmpty()) {
             log.info("Scheduler processed: activated={}, ended={}", toActivate.size(), toEnd.size());
         }
+    }
+
+    private Counter lifecycle(String action, String source) {
+        return Counter.builder("auction.lifecycle.processed")
+                .tag("action", action)
+                .tag("source", source)
+                .register(meterRegistry);
     }
 }

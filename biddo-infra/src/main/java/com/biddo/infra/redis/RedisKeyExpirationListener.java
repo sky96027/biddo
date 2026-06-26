@@ -1,6 +1,8 @@
 package com.biddo.infra.redis;
 
 import com.biddo.domain.auction.service.AuctionService;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,9 +16,11 @@ import org.springframework.stereotype.Component;
 public class RedisKeyExpirationListener {
 
     private final AuctionService auctionService;
+    private final MeterRegistry meterRegistry;
 
-    public RedisKeyExpirationListener(AuctionService auctionService) {
+    public RedisKeyExpirationListener(AuctionService auctionService, MeterRegistry meterRegistry) {
         this.auctionService = auctionService;
+        this.meterRegistry = meterRegistry;
     }
 
     @Configuration
@@ -42,14 +46,23 @@ public class RedisKeyExpirationListener {
                 Long auctionId = extractAuctionId(expiredKey, RedisAuctionLifecycle.START_KEY_PREFIX);
                 log.info("TTL expired - activating auction: auctionId={}", auctionId);
                 auctionService.activateAuction(auctionId);
+                lifecycle("activate", "ttl").increment();
             } else if (expiredKey.startsWith(RedisAuctionLifecycle.END_KEY_PREFIX)) {
                 Long auctionId = extractAuctionId(expiredKey, RedisAuctionLifecycle.END_KEY_PREFIX);
                 log.info("TTL expired - ending auction: auctionId={}", auctionId);
                 auctionService.endAuction(auctionId);
+                lifecycle("end", "ttl").increment();
             }
         } catch (Exception e) {
             log.error("Failed to handle expired key: {}", expiredKey, e);
         }
+    }
+
+    private Counter lifecycle(String action, String source) {
+        return Counter.builder("auction.lifecycle.processed")
+                .tag("action", action)
+                .tag("source", source)
+                .register(meterRegistry);
     }
 
     private Long extractAuctionId(String key, String prefix) {
