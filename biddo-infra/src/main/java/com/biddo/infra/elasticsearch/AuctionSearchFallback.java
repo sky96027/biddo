@@ -1,6 +1,7 @@
 package com.biddo.infra.elasticsearch;
 
 import com.biddo.domain.auction.entity.Auction;
+import com.biddo.domain.auction.entity.AuctionStatus;
 import com.biddo.domain.search.dto.AuctionSearchCondition;
 import com.biddo.domain.search.dto.AuctionSearchResult;
 import com.biddo.domain.auction.port.out.AuctionRepository;
@@ -27,10 +28,11 @@ public class AuctionSearchFallback {
         StringBuilder jpql = new StringBuilder("""
                 SELECT a FROM Auction a
                 JOIN FETCH a.seller JOIN FETCH a.category LEFT JOIN FETCH a.images
-                WHERE a.status = 'ACTIVE'
+                WHERE a.status = :status
                 """);
 
         Map<String, Object> params = new HashMap<>();
+        params.put("status", AuctionStatus.ACTIVE);
 
         if (condition.getKeyword() != null && !condition.getKeyword().isBlank()) {
             jpql.append(" AND a.title LIKE :keyword");

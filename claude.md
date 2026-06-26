@@ -38,6 +38,7 @@ biddo/
 - 그 외 도메인 → `.claude/harnesses/layered/prompt.md`
 - 테스트 작성 시 → `.claude/harnesses/test/prompt.md`
 - 코드 리뷰는 **사용자가 요청한 경우에만** → `.claude/harnesses/review/prompt.md`
+- 프론트엔드(`front/`) 작업 시 → `.claude/harnesses/front/prompt.md`
 
 API 응답 규칙은 `.claude/rules/api-response.md`를 따를 것.
 
