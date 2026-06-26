@@ -51,7 +51,9 @@ services:
       - kafka
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.0
+    build:
+      context: docker/elasticsearch
+      dockerfile: Dockerfile
     container_name: biddo-elasticsearch
     ports:
       - "9200:9200"
