@@ -43,18 +43,15 @@
 
 | 구분 | 서비스 | 스펙 / 설명 |
 | --- | --- | --- |
-| Compute | EC2 x 2 | t2.micro (또는 t3.micro) — 최소 사양 2대 운영 |
-| Load Balancing | ALB (Application Load Balancer) | 2대 EC2 간 트래픽 분산 |
-| DNS | Route 53 | 도메인 관리 및 라우팅 |
+| Compute (App) | EC2 x2 (t3.small) | Spring Boot 앱 서버. ALB 뒤에서 이중화 운영 |
+| Compute (Infra) | EC2 x1 (t3.large) | PostgreSQL, Redis Sentinel, Kafka, Elasticsearch, 모니터링 — VPC 내부 전용 |
+| Load Balancing | ALB (Application Load Balancer) | 앱 EC2 헬스체크 + 트래픽 분산. 도메인 없이 ALB DNS 사용 |
+| Container Registry | ECR | Spring Boot 앱 Docker 이미지 저장소 |
 | Storage | S3 | 상품 이미지 저장소 |
 | CDN | CloudFront | 이미지 및 정적 리소스 캐싱/배포 |
-| Database | EC2 (PostgreSQL) | EC2에 직접 설치 |
-| Cache | EC2 (Redis) | EC2에 직접 설치 |
-| Messaging | EC2 (Kafka) | EC2에 직접 설치 |
-| Search | EC2 (Elasticsearch) | EC2에 직접 설치 |
 | Image Processing | Lambda@Edge | 이미지 리사이징/썸네일 생성 (CloudFront 연동) |
+| Scheduling | EventBridge Scheduler | EC2 자동 시작/중지 cron (스케줄링 운영) |
 | Secret Management | Secrets Manager | DB 비밀번호, API 키 등 보안 관리 |
-| Monitoring | CloudWatch | AWS 리소스 모니터링 및 로그 수집 |
 
 ## Monitoring & Performance
 
@@ -80,9 +77,9 @@
 ```mermaid
 flowchart TB
     User["사용자"]
-    
-    subgraph DNS_CDN["DNS & CDN"]
-        Route53["Route 53(DNS)"]
+    Scheduler["EventBridge Scheduler(EC2 자동 시작/중지)"]
+
+    subgraph CDN["CDN"]
         CloudFront["CloudFront(CDN)"]
         Lambda["Lambda@Edge(이미지 리사이징)"]
     end
@@ -91,65 +88,56 @@ flowchart TB
         ALB["ALB(Application Load Balancer)"]
     end
 
-    subgraph Compute["Compute (EC2 x 2)"]
-        EC2_1["EC2 #1(Spring Boot)"]
-        EC2_2["EC2 #2(Spring Boot)"]
+    subgraph AppLayer["EC2-App x2 (t3.small)"]
+        EC2_1["EC2-App-1(Spring Boot)"]
+        EC2_2["EC2-App-2(Spring Boot)"]
     end
 
-    subgraph DataStore["Data Store"]
-        RDS["EC2(PostgreSQL)"]
-        Redis["EC2(Redis)"]
-        S3["S3(이미지 저장)"]
+    subgraph InfraLayer["EC2-Infra (t3.large) — VPC Private"]
+        PG["PostgreSQL"]
+        Redis["Redis Sentinel(master + replica + sentinel x3)"]
+        Kafka["Kafka(KRaft)"]
+        ES["Elasticsearch"]
+        Monitoring["Prometheus / Grafana / Tempo"]
     end
 
-    subgraph Messaging["Messaging & Search"]
-        MSK["EC2(Kafka)"]
-        OpenSearch["EC2(Elasticsearch)"]
-    end
+    S3["S3(이미지 저장)"]
 
-    subgraph Monitoring["Monitoring"]
-        CW["CloudWatch"]
-        Prometheus["Prometheus"]
-        Grafana["Grafana"]
-    end
+    Scheduler -.->|cron 시작/중지| AppLayer
+    Scheduler -.->|cron 시작/중지| InfraLayer
 
-    User --> Route53
-    Route53 --> CloudFront
+    User --> CloudFront
     CloudFront --> ALB
     CloudFront --> S3
     CloudFront -.-> Lambda
-    
+
     ALB --> EC2_1
     ALB --> EC2_2
-    
-    EC2_1 --> RDS
+
+    EC2_1 --> PG
     EC2_1 --> Redis
-    EC2_1 --> MSK
-    EC2_1 --> OpenSearch
+    EC2_1 --> Kafka
+    EC2_1 --> ES
     EC2_1 --> S3
-    
-    EC2_2 --> RDS
+
+    EC2_2 --> PG
     EC2_2 --> Redis
-    EC2_2 --> MSK
-    EC2_2 --> OpenSearch
+    EC2_2 --> Kafka
+    EC2_2 --> ES
     EC2_2 --> S3
-    
-    MSK --> OpenSearch
-    
-    EC2_1 -.-> CW
-    EC2_2 -.-> CW
-    EC2_1 -.-> Prometheus
-    EC2_2 -.-> Prometheus
-    Prometheus -.-> Grafana
+
+    EC2_1 -.-> Monitoring
+    EC2_2 -.-> Monitoring
 ```
 
 ---
 
 # 비용 최적화 참고
 
-- EC2 t2.micro / t3.micro는 프리 티어 대상이며, 개발/소규모 운영에 적합합니다.
-- PostgreSQL, Redis, Kafka, Elasticsearch는 EC2에 직접 설치하여 비용을 절감합니다.
-- Docker Compose로 로컬/개발 환경 구성, EC2에서는 직접 설치 또는 Docker로 운영합니다.
+- PostgreSQL, Redis, Kafka, Elasticsearch를 관리형 서비스(RDS, ElastiCache, MSK 등) 대신 EC2에 Docker로 직접 운영해 비용을 절감합니다.
+- **EventBridge Scheduler**로 EC2를 필요한 시간대에만 자동 시작/중지합니다. 하루 4시간 운영 기준 월 ~$19 수준.
+- 상시 운영 시 월 ~$106, 스케줄링 운영 시 월 ~$19 (ALB 고정비 ~$6 포함).
+- 자세한 내용은 [AWS 배포 계획](AWS_배포_계획.md)을 참고하세요.
 
 ---
 
