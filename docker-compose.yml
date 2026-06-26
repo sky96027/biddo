@@ -91,6 +91,12 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
       CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
   kafka-exporter:
     image: danielqsj/kafka-exporter:latest
@@ -100,7 +106,9 @@ services:
     ports:
       - "9308:9308"
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
+    restart: on-failure
 
   elasticsearch:
     build:
@@ -115,6 +123,13 @@ services:
       ES_JAVA_OPTS: "-Xms512m -Xmx512m"
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: on-failure
 
   prometheus:
     image: prom/prometheus:v3.4.1
