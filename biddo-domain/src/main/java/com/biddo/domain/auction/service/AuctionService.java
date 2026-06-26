@@ -201,6 +201,26 @@ public class AuctionService {
         return auctionRepository.findById(auctionId);
     }
 
+    public List<Auction> findByIdIn(List<Long> ids) {
+        return auctionRepository.findByIdIn(ids);
+    }
+
+    public long countCompletedBySellerId(Long sellerId) {
+        return auctionRepository.countCompletedBySellerId(sellerId);
+    }
+
+    public List<Auction> findBySellerId(Long sellerId, AuctionStatus status, Long cursor, int size) {
+        return auctionRepository.findBySellerId(sellerId, status, cursor, size);
+    }
+
+    public List<Auction> findByWinnerId(Long winnerId, Long cursor, int size) {
+        return auctionRepository.findByWinnerId(winnerId, cursor, size);
+    }
+
+    public List<Auction> findActiveAuctionsByBidderId(Long bidderId, Long cursor, int size) {
+        return auctionRepository.findActiveAuctionsByBidderId(bidderId, cursor, size);
+    }
+
     private void validateSeller(Auction auction, Long memberId) {
         if (!auction.isSeller(memberId)) {
             throw new BusinessException(AuctionErrorCode.NOT_AUCTION_SELLER);

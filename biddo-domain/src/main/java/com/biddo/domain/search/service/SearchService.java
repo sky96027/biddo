@@ -36,4 +36,8 @@ public class SearchService {
     public void deleteAllRecentSearches(Long memberId) {
         recentSearchPort.deleteAll(memberId);
     }
+
+    public List<AuctionSearchResult> findSimilar(Long auctionId, int size) {
+        return auctionSearchPort.findSimilar(auctionId, size);
+    }
 }

@@ -4,8 +4,7 @@ import com.biddo.domain.auction.entity.Auction;
 import com.biddo.domain.auction.service.AuctionService;
 import com.biddo.domain.common.exception.BusinessException;
 import com.biddo.domain.member.entity.Member;
-import com.biddo.domain.member.exception.MemberErrorCode;
-import com.biddo.domain.member.repository.MemberRepository;
+import com.biddo.domain.member.service.MemberService;
 import com.biddo.domain.report.entity.Report;
 import com.biddo.domain.report.entity.ReportReason;
 import com.biddo.domain.report.entity.ReportStatus;
@@ -24,7 +23,7 @@ import java.util.List;
 public class ReportService {
 
     private final ReportRepository reportRepository;
-    private final MemberRepository memberRepository;
+    private final MemberService memberService;
     private final AuctionService auctionService;
 
     @Transactional
@@ -34,10 +33,8 @@ public class ReportService {
             throw new BusinessException(ReportErrorCode.SELF_REPORT_NOT_ALLOWED);
         }
 
-        Member reporter = memberRepository.findById(reporterId)
-                .orElseThrow(() -> new BusinessException(MemberErrorCode.MEMBER_NOT_FOUND));
-        Member reported = memberRepository.findById(reportedId)
-                .orElseThrow(() -> new BusinessException(MemberErrorCode.MEMBER_NOT_FOUND));
+        Member reporter = memberService.findById(reporterId);
+        Member reported = memberService.findById(reportedId);
 
         Auction auction = auctionId != null
                 ? auctionService.findByIdOptional(auctionId).orElse(null)
@@ -68,6 +65,10 @@ public class ReportService {
             return reportRepository.findByStatusFirstPage(status, pageRequest);
         }
         return reportRepository.findByStatusWithCursor(status, cursor, pageRequest);
+    }
+
+    public long countResolvedByReportedId(Long memberId) {
+        return reportRepository.countResolvedByReportedId(memberId);
     }
 
     @Transactional

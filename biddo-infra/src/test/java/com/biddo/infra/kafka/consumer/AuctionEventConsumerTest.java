@@ -17,7 +17,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -58,7 +60,6 @@ class AuctionEventConsumerTest {
     @Test
     @DisplayName("AUCTION_SOLD - 낙찰자, 판매자, 기타 입찰자에게 알림 생성")
     void handleAuctionEvents_sold_createsNotificationsForAllParties() {
-        // given
         AuctionEvent event = AuctionEvent.builder()
                 .eventType(AuctionEvent.AUCTION_SOLD)
                 .auctionId(10L)
@@ -68,15 +69,15 @@ class AuctionEventConsumerTest {
                 .occurredAt(LocalDateTime.now())
                 .build();
 
-        given(memberRepository.findById(1L)).willReturn(java.util.Optional.of(seller));
-        given(memberRepository.findById(2L)).willReturn(java.util.Optional.of(winner));
+        Map<Long, Member> memberLookup = Map.of(1L, seller, 2L, winner, 3L, otherBidder);
+        given(memberRepository.findAllById(any())).willAnswer(inv -> {
+            Collection<Long> ids = inv.getArgument(0);
+            return ids.stream().filter(memberLookup::containsKey).map(memberLookup::get).toList();
+        });
         given(bidRepository.findDistinctBidderIdsByAuctionId(10L)).willReturn(new ArrayList<>(List.of(2L, 3L)));
-        given(memberRepository.findAllById(List.of(3L))).willReturn(List.of(otherBidder));
 
-        // when
         consumer.handleAuctionEvents(List.of(event));
 
-        // then
         ArgumentCaptor<List<NotificationService.NotificationSpec>> captor = ArgumentCaptor.forClass(List.class);
         verify(notificationService).createAll(captor.capture());
 
@@ -90,7 +91,6 @@ class AuctionEventConsumerTest {
     @Test
     @DisplayName("AUCTION_ENDED (낙찰) - 낙찰자, 판매자, 기타 입찰자에게 알림 생성")
     void handleAuctionEvents_endedWithWinner_createsNotificationsForAllParties() {
-        // given
         AuctionEvent event = AuctionEvent.builder()
                 .eventType(AuctionEvent.AUCTION_ENDED)
                 .auctionId(10L)
@@ -100,15 +100,15 @@ class AuctionEventConsumerTest {
                 .occurredAt(LocalDateTime.now())
                 .build();
 
-        given(memberRepository.findById(1L)).willReturn(java.util.Optional.of(seller));
-        given(memberRepository.findById(2L)).willReturn(java.util.Optional.of(winner));
+        Map<Long, Member> memberLookup = Map.of(1L, seller, 2L, winner, 3L, otherBidder);
+        given(memberRepository.findAllById(any())).willAnswer(inv -> {
+            Collection<Long> ids = inv.getArgument(0);
+            return ids.stream().filter(memberLookup::containsKey).map(memberLookup::get).toList();
+        });
         given(bidRepository.findDistinctBidderIdsByAuctionId(10L)).willReturn(new ArrayList<>(List.of(2L, 3L)));
-        given(memberRepository.findAllById(List.of(3L))).willReturn(List.of(otherBidder));
 
-        // when
         consumer.handleAuctionEvents(List.of(event));
 
-        // then
         ArgumentCaptor<List<NotificationService.NotificationSpec>> captor = ArgumentCaptor.forClass(List.class);
         verify(notificationService).createAll(captor.capture());
 
@@ -122,7 +122,6 @@ class AuctionEventConsumerTest {
     @Test
     @DisplayName("AUCTION_ENDED (유찰) - 판매자에게만 알림 생성")
     void handleAuctionEvents_endedWithoutWinner_notifiesSellerOnly() {
-        // given
         AuctionEvent event = AuctionEvent.builder()
                 .eventType(AuctionEvent.AUCTION_ENDED)
                 .auctionId(10L)
@@ -132,12 +131,10 @@ class AuctionEventConsumerTest {
                 .occurredAt(LocalDateTime.now())
                 .build();
 
-        given(memberRepository.findById(1L)).willReturn(java.util.Optional.of(seller));
+        given(memberRepository.findAllById(any())).willReturn(List.of(seller));
 
-        // when
         consumer.handleAuctionEvents(List.of(event));
 
-        // then
         ArgumentCaptor<List<NotificationService.NotificationSpec>> captor = ArgumentCaptor.forClass(List.class);
         verify(notificationService).createAll(captor.capture());
 
@@ -151,7 +148,6 @@ class AuctionEventConsumerTest {
     @Test
     @DisplayName("AUCTION_CANCELLED - 기존 입찰자에게 취소 알림 생성")
     void handleAuctionEvents_cancelled_notifiesBidders() {
-        // given
         AuctionEvent event = AuctionEvent.builder()
                 .eventType(AuctionEvent.AUCTION_CANCELLED)
                 .auctionId(10L)
@@ -159,13 +155,12 @@ class AuctionEventConsumerTest {
                 .occurredAt(LocalDateTime.now())
                 .build();
 
+        given(memberRepository.findAllById(any())).willReturn(List.of(seller));
         given(bidRepository.findDistinctBidderIdsByAuctionId(10L)).willReturn(new ArrayList<>(List.of(2L, 3L)));
         given(memberRepository.findAllById(List.of(2L, 3L))).willReturn(List.of(winner, otherBidder));
 
-        // when
         consumer.handleAuctionEvents(List.of(event));
 
-        // then
         ArgumentCaptor<List<NotificationService.NotificationSpec>> captor = ArgumentCaptor.forClass(List.class);
         verify(notificationService).createAll(captor.capture());
 
@@ -179,7 +174,6 @@ class AuctionEventConsumerTest {
     @Test
     @DisplayName("AUCTION_CANCELLED - 입찰자 없으면 알림 생성 없음")
     void handleAuctionEvents_cancelledNoBidders_noNotifications() {
-        // given
         AuctionEvent event = AuctionEvent.builder()
                 .eventType(AuctionEvent.AUCTION_CANCELLED)
                 .auctionId(10L)
@@ -187,12 +181,11 @@ class AuctionEventConsumerTest {
                 .occurredAt(LocalDateTime.now())
                 .build();
 
+        given(memberRepository.findAllById(any())).willReturn(List.of(seller));
         given(bidRepository.findDistinctBidderIdsByAuctionId(10L)).willReturn(List.of());
 
-        // when
         consumer.handleAuctionEvents(List.of(event));
 
-        // then
         ArgumentCaptor<List<NotificationService.NotificationSpec>> captor = ArgumentCaptor.forClass(List.class);
         verify(notificationService).createAll(captor.capture());
         assertThat(captor.getValue()).isEmpty();
@@ -201,7 +194,6 @@ class AuctionEventConsumerTest {
     @Test
     @DisplayName("처리 대상 외 이벤트 타입은 무시")
     void handleAuctionEvents_unknownEventType_skipped() {
-        // given
         AuctionEvent event = AuctionEvent.builder()
                 .eventType(AuctionEvent.AUCTION_CREATED)
                 .auctionId(10L)
@@ -209,10 +201,10 @@ class AuctionEventConsumerTest {
                 .occurredAt(LocalDateTime.now())
                 .build();
 
-        // when
+        given(memberRepository.findAllById(any())).willReturn(List.of(seller));
+
         consumer.handleAuctionEvents(List.of(event));
 
-        // then
         ArgumentCaptor<List<NotificationService.NotificationSpec>> captor = ArgumentCaptor.forClass(List.class);
         verify(notificationService).createAll(captor.capture());
         assertThat(captor.getValue()).isEmpty();
@@ -221,11 +213,10 @@ class AuctionEventConsumerTest {
     @Test
     @DisplayName("배치 내 이벤트 하나 처리 실패 시 나머지 이벤트는 계속 처리")
     void handleAuctionEvents_oneEventFails_othersProcessed() {
-        // given
         AuctionEvent failingEvent = AuctionEvent.builder()
                 .eventType(AuctionEvent.AUCTION_ENDED)
                 .auctionId(99L)
-                .sellerId(999L)  // 존재하지 않는 판매자
+                .sellerId(999L)
                 .currentPrice(500_000L)
                 .winnerId(null)
                 .occurredAt(LocalDateTime.now())
@@ -240,13 +231,11 @@ class AuctionEventConsumerTest {
                 .occurredAt(LocalDateTime.now())
                 .build();
 
-        given(memberRepository.findById(999L)).willReturn(java.util.Optional.empty());
-        given(memberRepository.findById(1L)).willReturn(java.util.Optional.of(seller));
+        // Batch fetch returns only seller (id=1L); sellerId=999L not found → memberMap.get(999L) = null
+        given(memberRepository.findAllById(any())).willReturn(List.of(seller));
 
-        // when
         consumer.handleAuctionEvents(List.of(failingEvent, validEvent));
 
-        // then
         ArgumentCaptor<List<NotificationService.NotificationSpec>> captor = ArgumentCaptor.forClass(List.class);
         verify(notificationService).createAll(captor.capture());
         assertThat(captor.getValue()).hasSize(1);

@@ -9,7 +9,7 @@ import com.biddo.api.member.dto.response.MemberProfileResponse;
 import com.biddo.api.member.dto.response.MemberResponse;
 import com.biddo.domain.auction.entity.Auction;
 import com.biddo.domain.auction.entity.AuctionStatus;
-import com.biddo.domain.auction.port.out.AuctionRepository;
+import com.biddo.domain.auction.service.AuctionService;
 import com.biddo.domain.member.entity.Member;
 import com.biddo.domain.member.service.MemberService;
 import com.biddo.domain.review.service.ReviewService;
@@ -30,7 +30,7 @@ public class MemberController {
     private static final int DEFAULT_SIZE = 20;
 
     private final MemberService memberService;
-    private final AuctionRepository auctionRepository;
+    private final AuctionService auctionService;
     private final ReviewService reviewService;
 
     @GetMapping("/{memberId}")
@@ -38,7 +38,7 @@ public class MemberController {
         Member member = memberService.findById(memberId);
         double avgRating = reviewService.getAverageRating(memberId);
         long reviewCount = reviewService.getReviewCount(memberId);
-        long completedTradeCount = auctionRepository.countCompletedBySellerId(memberId);
+        long completedTradeCount = auctionService.countCompletedBySellerId(memberId);
         return ApiResponse.success(MemberProfileResponse.of(member, avgRating, reviewCount, completedTradeCount));
     }
 
@@ -68,7 +68,7 @@ public class MemberController {
             @RequestParam(required = false) Long cursor,
             @RequestParam(defaultValue = "20") int size) {
         int fetchSize = Math.min(size, DEFAULT_SIZE);
-        List<Auction> auctions = auctionRepository.findBySellerId(
+        List<Auction> auctions = auctionService.findBySellerId(
                 userDetails.getMemberId(), status, cursor, fetchSize + 1);
         return ApiResponse.success(toCursorResponse(auctions, fetchSize));
     }
@@ -79,7 +79,7 @@ public class MemberController {
             @RequestParam(required = false) Long cursor,
             @RequestParam(defaultValue = "20") int size) {
         int fetchSize = Math.min(size, DEFAULT_SIZE);
-        List<Auction> auctions = auctionRepository.findByWinnerId(
+        List<Auction> auctions = auctionService.findByWinnerId(
                 userDetails.getMemberId(), cursor, fetchSize + 1);
         return ApiResponse.success(toCursorResponse(auctions, fetchSize));
     }
@@ -90,7 +90,7 @@ public class MemberController {
             @RequestParam(required = false) Long cursor,
             @RequestParam(defaultValue = "20") int size) {
         int fetchSize = Math.min(size, DEFAULT_SIZE);
-        List<Auction> auctions = auctionRepository.findActiveAuctionsByBidderId(
+        List<Auction> auctions = auctionService.findActiveAuctionsByBidderId(
                 userDetails.getMemberId(), cursor, fetchSize + 1);
         return ApiResponse.success(toCursorResponse(auctions, fetchSize));
     }

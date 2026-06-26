@@ -3,8 +3,8 @@ package com.biddo.domain.member.service;
 import com.biddo.domain.auction.port.out.AuctionRepository;
 import com.biddo.domain.member.entity.Member;
 import com.biddo.domain.member.repository.MemberRepository;
-import com.biddo.domain.report.repository.ReportRepository;
-import com.biddo.domain.review.repository.ReviewRepository;
+import com.biddo.domain.report.service.ReportService;
+import com.biddo.domain.review.service.ReviewService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,9 +30,9 @@ public class TrustScoreCalculator {
     private static final long ACCOUNT_AGE_MAX_DAYS = 365;
     private static final double REPORT_PENALTY_PER_COUNT = 0.5;
 
-    private final ReviewRepository reviewRepository;
+    private final ReviewService reviewService;
     private final AuctionRepository auctionRepository;
-    private final ReportRepository reportRepository;
+    private final ReportService reportService;
     private final MemberRepository memberRepository;
 
     @Transactional
@@ -65,7 +65,7 @@ public class TrustScoreCalculator {
     }
 
     private double calculateReviewScore(Long memberId) {
-        return reviewRepository.findAverageRatingByRevieweeId(memberId).orElse(0.0);
+        return reviewService.getAverageRating(memberId);
     }
 
     private double calculateCompletionRate(Long memberId) {
@@ -85,7 +85,7 @@ public class TrustScoreCalculator {
     }
 
     private double calculateReportPenalty(Long memberId) {
-        long reportCount = reportRepository.countResolvedByReportedId(memberId);
+        long reportCount = reportService.countResolvedByReportedId(memberId);
         return Math.min(MAX_SCORE, reportCount * REPORT_PENALTY_PER_COUNT);
     }
 }

@@ -2,8 +2,7 @@ package com.biddo.domain.search.service;
 
 import com.biddo.domain.common.exception.BusinessException;
 import com.biddo.domain.member.entity.Member;
-import com.biddo.domain.member.exception.MemberErrorCode;
-import com.biddo.domain.member.repository.MemberRepository;
+import com.biddo.domain.member.service.MemberService;
 import com.biddo.domain.search.entity.KeywordAlert;
 import com.biddo.domain.search.exception.SearchErrorCode;
 import com.biddo.domain.search.repository.KeywordAlertRepository;
@@ -19,7 +18,7 @@ import java.util.List;
 public class KeywordAlertService {
 
     private final KeywordAlertRepository keywordAlertRepository;
-    private final MemberRepository memberRepository;
+    private final MemberService memberService;
 
     @Transactional
     public KeywordAlert create(Long memberId, String keyword, Long categoryId, Long maxPrice) {
@@ -27,8 +26,7 @@ public class KeywordAlertService {
             throw new BusinessException(SearchErrorCode.KEYWORD_ALERT_DUPLICATE);
         }
 
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new BusinessException(MemberErrorCode.MEMBER_NOT_FOUND));
+        Member member = memberService.findById(memberId);
 
         KeywordAlert alert = KeywordAlert.builder()
                 .member(member)
