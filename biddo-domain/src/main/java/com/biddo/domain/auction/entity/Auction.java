@@ -18,6 +18,7 @@ import java.util.List;
 @Entity
 @Table(name = "auction", indexes = {
         @Index(name = "idx_auction_status_end_time", columnList = "status, end_time"),
+        @Index(name = "idx_auction_status_start_time", columnList = "status, start_time"),
         @Index(name = "idx_auction_seller", columnList = "seller_id"),
         @Index(name = "idx_auction_category", columnList = "category_id"),
         @Index(name = "idx_auction_winner", columnList = "winner_id")
