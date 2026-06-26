@@ -18,18 +18,27 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DisplayName("Standard Analyzer: 한국어 검색 한계 검증")
-class StandardAnalyzerKoreanTest {
+@DisplayName("Nori Analyzer: 한국어 형태소 분석 검증")
+class NoriAnalyzerKoreanTest {
 
+    // analysis-nori 플러그인을 설치한 후 ES를 기동하도록 entrypoint 오버라이드
     static ElasticsearchContainer elasticsearch = new ElasticsearchContainer(
             "docker.elastic.co/elasticsearch/elasticsearch:8.13.4")
             .withEnv("xpack.security.enabled", "false")
-            .withEnv("discovery.type", "single-node");
+            .withEnv("discovery.type", "single-node")
+            .withEnv("ES_JAVA_OPTS", "-Xms512m -Xmx512m")
+            .withCreateContainerCmdModifier(cmd -> {
+                cmd.withEntrypoint("/bin/sh", "-c");
+                cmd.withCmd(
+                        "/usr/share/elasticsearch/bin/elasticsearch-plugin install --batch analysis-nori && " +
+                        "exec /usr/local/bin/docker-entrypoint.sh eswrapper"
+                );
+            });
 
     static ElasticsearchClient client;
     static RestClient restClient;
 
-    private static final String INDEX = "auctions_standard_test";
+    private static final String INDEX = "auctions_nori_test";
 
     @BeforeAll
     static void setUp() throws IOException {
@@ -56,10 +65,27 @@ class StandardAnalyzerKoreanTest {
     static void createIndexAndSeedData() throws IOException {
         String settings = """
                 {
+                  "settings": {
+                    "analysis": {
+                      "analyzer": {
+                        "nori_analyzer": {
+                          "type": "custom",
+                          "tokenizer": "nori_tokenizer",
+                          "filter": ["nori_pos_filter", "lowercase"]
+                        }
+                      },
+                      "filter": {
+                        "nori_pos_filter": {
+                          "type": "nori_part_of_speech",
+                          "stoptags": ["E", "J", "SC", "SE", "SF"]
+                        }
+                      }
+                    }
+                  },
                   "mappings": {
                     "properties": {
-                      "title": { "type": "text", "analyzer": "standard" },
-                      "description": { "type": "text", "analyzer": "standard" }
+                      "title": { "type": "text", "analyzer": "nori_analyzer" },
+                      "description": { "type": "text", "analyzer": "nori_analyzer" }
                     }
                   }
                 }
@@ -90,75 +116,49 @@ class StandardAnalyzerKoreanTest {
     }
 
     @Test
-    @DisplayName("붙여쓴 '캠핑의자'로 검색 시 띄어쓴 '캠핑 의자'가 누락된다")
-    void search_compoundWord_missesSpacedVariant() throws IOException {
-        // given
-        String keyword = "캠핑의자";
+    @DisplayName("붙여쓴 '캠핑의자'로 검색 시 띄어쓴 '캠핑 의자'도 함께 검색된다")
+    void search_compoundWord_findsSpacedVariant() throws IOException {
+        List<String> titles = searchTitles("캠핑의자");
 
-        // when
-        List<String> titles = searchTitles(keyword);
-
-        // then
         assertThat(titles).contains("캠핑의자 접이식 경량");
-        assertThat(titles).doesNotContain("캠핑 의자 릴렉스체어");
-    }
-
-    @Test
-    @DisplayName("띄어쓴 '캠핑 의자'로 검색 시 붙여쓴 '캠핑의자'가 누락된다")
-    void search_spacedWord_missesCompoundVariant() throws IOException {
-        // given
-        String keyword = "캠핑 의자";
-
-        // when
-        List<String> titles = searchTitles(keyword);
-
-        // then
         assertThat(titles).contains("캠핑 의자 릴렉스체어");
-        assertThat(titles).doesNotContain("캠핑의자 접이식 경량");
     }
 
     @Test
-    @DisplayName("'블루투스이어폰'으로 검색 시 '무선 블루투스 이어폰'이 누락된다")
-    void search_bluetoothEarphone_missesSpacedVariant() throws IOException {
-        // given
-        String keyword = "블루투스이어폰";
+    @DisplayName("조사가 붙은 '캠핑의자를'로 검색해도 조사가 제거되어 결과가 반환된다")
+    void search_withParticle_stripsParticleAndFindsResults() throws IOException {
+        List<String> titles = searchTitles("캠핑의자를");
 
-        // when
-        List<String> titles = searchTitles(keyword);
+        assertThat(titles).isNotEmpty();
+        assertThat(titles).contains("캠핑의자 접이식 경량");
+    }
 
-        // then
+    @Test
+    @DisplayName("붙여쓴 '블루투스이어폰'으로 검색 시 띄어쓴 '무선 블루투스 이어폰'도 검색된다")
+    void search_bluetoothEarphone_findsSpacedVariant() throws IOException {
+        List<String> titles = searchTitles("블루투스이어폰");
+
         assertThat(titles).contains("블루투스이어폰 노이즈캔슬링");
-        assertThat(titles).doesNotContain("무선 블루투스 이어폰");
+        assertThat(titles).contains("무선 블루투스 이어폰");
     }
 
     @Test
-    @DisplayName("조사가 붙은 '캠핑의자를'로 검색 시 결과가 없다")
-    void search_withParticle_noResults() throws IOException {
-        // given
-        String keyword = "캠핑의자를";
+    @DisplayName("붙여쓴 '기계식키보드'로 검색 시 띄어쓴 '기계식 키보드 청축'도 검색된다")
+    void search_mechanicalKeyboard_findsSpacedVariant() throws IOException {
+        List<String> titles = searchTitles("기계식키보드");
 
-        // when
-        List<String> titles = searchTitles(keyword);
-
-        // then
-        assertThat(titles).isEmpty();
-    }
-
-    @Test
-    @DisplayName("'기계식키보드'로 검색 시 '기계식 키보드 청축'이 누락된다")
-    void search_mechanicalKeyboard_missesSpacedVariant() throws IOException {
-        // given
-        String keyword = "기계식키보드";
-
-        // when
-        List<String> titles = searchTitles(keyword);
-
-        // then
         assertThat(titles).contains("기계식키보드 적축");
-        assertThat(titles).doesNotContain("기계식 키보드 청축");
+        assertThat(titles).contains("기계식 키보드 청축");
     }
 
-    // Nori 분석기 적용 후 동일 케이스의 반전 결과는 NoriAnalyzerKoreanTest에서 검증한다.
+    @Test
+    @DisplayName("조사가 붙은 '키보드로'로 검색해도 조사가 제거되어 키보드 관련 결과가 반환된다")
+    void search_keyboardWithParticle_stripsParticleAndFindsResults() throws IOException {
+        List<String> titles = searchTitles("키보드로");
+
+        assertThat(titles).isNotEmpty();
+        assertThat(titles).anyMatch(t -> t.contains("키보드"));
+    }
 
     private List<String> searchTitles(String keyword) throws IOException {
         SearchResponse<ObjectNode> response = client.search(s -> s

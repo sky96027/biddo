@@ -37,7 +37,7 @@
 
 | 구분 | 기술 | 설명 |
 | --- | --- | --- |
-| Full-text Search | Elasticsearch | 키워드/카테고리/가격 범위 등 고급 검색 엔진 |
+| Full-text Search | Elasticsearch | 키워드/카테고리/가격 범위 고급 검색, Nori 형태소 분석기(한국어), function_score 커스텀 스코어링 |
 
 ## AWS 인프라
 
