@@ -75,7 +75,7 @@ erDiagram
 | category_id | BIGINT | FK → Category, NOT NULL | 카테고리 ID |
 | title | VARCHAR(200) | NOT NULL | 상품명 |
 | description | TEXT | NOT NULL | 상품 설명 |
-| condition | VARCHAR(20) | NOT NULL | 상품 상태 (NEW, LIKE_NEW, GOOD, FAIR, POOR) |
+| item_condition | VARCHAR(20) | NOT NULL | 상품 상태 (NEW, LIKE_NEW, GOOD, FAIR, POOR) |
 | starting_price | BIGINT | NOT NULL | 시작가 |
 | current_price | BIGINT | NOT NULL | 현재 최고 입찰가 |
 | buy_now_price | BIGINT |  | 즉시 구매가 (NULL이면 미설정) |
@@ -91,6 +91,7 @@ erDiagram
 **인덱스:**
 
 - `idx_auction_status_end_time` (status, end_time) — 진행 중 경매 조회
+- `idx_auction_status_start_time` (status, start_time) — PENDING→ACTIVE 전환 배치 조회
 - `idx_auction_seller` (seller_id) — 판매 목록 조회
 - `idx_auction_category` (category_id) — 카테고리 검색
 - `idx_auction_winner` (winner_id) — 구매 목록 조회
@@ -125,7 +126,7 @@ erDiagram
 
 - `idx_bid_auction_amount` (auction_id, bid_amount DESC) — 최고 입찰 조회
 - `idx_bid_bidder` (bidder_id) — 내 입찰 목록
-- `idx_bid_auction_created` (auction_id, created_at) — 입찰 히스토리
+- `idx_bid_auction_id` (auction_id, bid_id DESC) — 입찰 히스토리 (Sort 제거)
 
 ---
 
@@ -201,18 +202,17 @@ erDiagram
 
 | 컬럼명 | 타입 | 제약조건 | 설명 |
 | --- | --- | --- | --- |
-| notification_id | BIGINT | PK, AUTO_INCREMENT | 알림 ID |
+| notification_id | BIGINT | PK, SEQUENCE (allocationSize=50) | 알림 ID |
 | receiver_id | BIGINT | FK → Member, NOT NULL | 수신자 ID |
 | auction_id | BIGINT | FK → Auction | 관련 경매 ID |
-| type | VARCHAR(30) | NOT NULL | 알림 유형 (BID, OUTBID, AUCTION_END, WON, PRICE_ALERT, KEYWORD_MATCH) |
-| title | VARCHAR(200) | NOT NULL | 알림 제목 |
+| type | VARCHAR(20) | NOT NULL | 알림 유형 (BID, OUTBID, AUCTION_END, WON, PRICE_ALERT, KEYWORD_MATCH) |
 | message | VARCHAR(500) | NOT NULL | 알림 내용 |
 | is_read | BOOLEAN | DEFAULT FALSE | 읽음 여부 |
 | created_at | TIMESTAMP | NOT NULL | 알림 시간 |
 
 **인덱스:**
 
-- `idx_notification_receiver_read` (receiver_id, is_read, created_at DESC) — 안 읽은 알림 조회
+- `idx_notification_receiver_id` (receiver_id, notification_id DESC) — 알림 목록 조회 (PK 역방향 스캔 제거)
 
 ---
 

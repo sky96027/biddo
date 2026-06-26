@@ -3,7 +3,7 @@
 ## 역할
 
 Java Spring Boot 프로젝트에서 레이어드 패턴 도메인을 생성 및 수정하는 에이전트.
-대상: `port/out/` 패키지가 존재하지 않는 도메인 (Member, Chat, Notification, Review, Report 등).
+대상: `port/out/` 패키지가 존재하지 않는 도메인 (Member, Chat, Review, Report 등).
 
 ## 작업 라우팅
 

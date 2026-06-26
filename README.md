@@ -12,8 +12,8 @@
 | Real-time | WebSocket (입찰/채팅), SSE (알림/카운트다운) |
 | Search | Elasticsearch |
 | Storage | S3 + CloudFront + Lambda@Edge (이미지 리사이징) |
-| Infra | EC2 x2 + ALB, Route 53, GitHub Actions CI/CD, Docker |
-| Monitoring | Prometheus + Grafana + CloudWatch |
+| Infra | EC2 x3 (App x2 + Infra x1), ALB, ECR, EventBridge Scheduler, GitHub Actions CI/CD, Docker |
+| Monitoring | Prometheus + Grafana + Tempo (분산 추적) |
 | API Docs | SpringDoc OpenAPI (Swagger UI) |
 | Logging | Logback (콘솔 + 로컬 파일, 일별 롤링) |
 
@@ -88,7 +88,7 @@ biddo/
 # 1. 환경 변수 설정 (Docker Compose용)
 cp .env.example .env
 
-# 2. 인프라 실행 (PostgreSQL, Redis, Kafka, Zookeeper)
+# 2. 인프라 실행 (PostgreSQL, Redis, Kafka, Elasticsearch)
 docker-compose up -d
 
 # 3. 애플리케이션 실행
@@ -123,6 +123,7 @@ Swagger UI: `http://localhost:9090/swagger-ui/index.html`
 ## 설계 문서
 
 - [프로젝트 개요](docs/Biddo-중고_경매_시스템(Used_Auction_System).md)
+- [AWS 배포 계획](docs/AWS_배포_계획.md)
 - [ERD](docs/spec/ERD.md)
 - [API 명세서](docs/spec/API_명세서.md)
 - [비즈니스 규칙 정의서](docs/spec/비즈니스_규칙_정의서.md)
