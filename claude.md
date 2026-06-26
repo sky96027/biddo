@@ -5,12 +5,12 @@
 ## 기술 스택
 
 - **Backend**: Java 17+, Spring Boot 3.x, Spring Data JPA (Hibernate), Gradle
-- **DB**: PostgreSQL, Redis (Lettuce + Redisson)
+- **DB**: PostgreSQL, Redis Sentinel (master + replica + sentinel x3), Redisson
 - **Messaging**: Apache Kafka
 - **Real-time**: WebSocket (입찰/채팅), SSE (알림)
 - **Search**: Elasticsearch
 - **Storage**: S3 + CloudFront + Lambda@Edge
-- **Infra**: EC2 x2 + ALB, GitHub Actions CI/CD, Docker
+- **Infra**: EC2 x3 (App x2 + Infra x1) + ALB + ECR, EventBridge Scheduler, GitHub Actions CI/CD, Docker
 
 ---
 

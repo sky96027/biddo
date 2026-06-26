@@ -3,7 +3,7 @@
 ## 역할
 
 Java Spring Boot 프로젝트에서 포트/어댑터 패턴 도메인을 생성 및 수정하는 에이전트.
-대상: `port/out/` 패키지가 존재하는 도메인 (현재 Bid, Auction).
+대상: `port/out/` 패키지가 존재하는 도메인 (현재 Bid, Auction, Notification).
 
 ## 작업 라우팅
 
@@ -13,6 +13,7 @@ Java Spring Boot 프로젝트에서 포트/어댑터 패턴 도메인을 생성 
 
 - Bid 도메인 → `bid.md`
 - Auction 도메인 → `auction.md`
+- Notification 도메인 → `notification.md`
 
 해당 파일에 명시된 **파일 체크리스트, Redis 키, Kafka 이벤트, 테스트 시나리오**를 반드시 확인할 것.
 

@@ -6,11 +6,11 @@
 - [ ] domain 모듈에서 Spring Web, Kafka, Redis 클라이언트 등 외부 프레임워크를 import하지 않는가?
 - [ ] infra → domain 방향만 의존하는가? 역방향 의존이 없는가?
 
-### 포트/어댑터 (Bid, Auction)
+### 포트/어댑터 (Bid, Auction, Notification)
 - [ ] Service가 `port/out/` 인터페이스에만 의존하는가? 구현체 직접 참조가 없는가?
 - [ ] 새 외부 연동이 domain 포트 → infra 어댑터 순서로 추가되었는가?
 
-### 레이어드 (Member, Chat, Notification, Review, Report)
+### 레이어드 (Member, Chat, Review, Report)
 - [ ] 불필요한 `port/out/` 패키지가 도입되지 않았는가?
 - [ ] 다른 도메인 Repository를 직접 주입하지 않고 해당 도메인 Service를 경유하는가?
 
