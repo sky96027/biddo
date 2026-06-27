@@ -42,4 +42,5 @@ out/
 data
 .env
 logs/
+**/application-local.yml
 docs/test-accounts.md

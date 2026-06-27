@@ -41,6 +41,18 @@ export interface AuctionSummary {
   categoryName: string
 }
 
+export interface AuctionSellerInfo {
+  memberId: number
+  nickname: string
+  profileImageUrl: string | null
+  trustScore: number
+}
+
+export interface AuctionCategoryInfo {
+  categoryId: number
+  name: string
+}
+
 export interface AuctionDetail {
   auctionId: number
   title: string
@@ -50,15 +62,14 @@ export interface AuctionDetail {
   startingPrice: number
   buyNowPrice: number | null
   bidCount: number
+  viewCount: number
   status: AuctionStatus
-  sellerId: number
-  sellerNickname: string
+  seller: AuctionSellerInfo
+  category: AuctionCategoryInfo
   winnerId: number | null
   startTime: string
   endTime: string
   imageUrls: string[]
-  categoryId: number
-  categoryName: string
 }
 
 export interface AuctionCreateRequest {

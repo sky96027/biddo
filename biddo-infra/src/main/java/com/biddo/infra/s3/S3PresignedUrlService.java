@@ -31,7 +31,7 @@ public class S3PresignedUrlService {
     private String cloudfrontDomain;
 
     public PresignedUrlResult generatePresignedUrl(String fileName, String contentType, String purpose) {
-        String path = PURPOSE_PATHS.getOrDefault(purpose, "etc");
+        String path = PURPOSE_PATHS.getOrDefault(purpose.toLowerCase(), "etc");
         String key = path + "/" + UUID.randomUUID() + "_" + fileName;
 
         PutObjectRequest putRequest = PutObjectRequest.builder()
