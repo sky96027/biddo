@@ -4,6 +4,89 @@ import { createAuction, getCategories } from '../api/auction'
 import { uploadImage } from '../api/upload'
 import type { Category, ItemCondition } from '../types'
 
+const todayLocal = () => {
+  const now = new Date()
+  return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10)
+}
+
+const MINUTES = ['00', '10', '20', '30', '40', '50']
+const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'))
+
+interface DateTimePickerProps {
+  value: string
+  onChange: (value: string) => void
+  required?: boolean
+}
+
+const DateTimePicker = ({ value, onChange, required }: DateTimePickerProps) => {
+  const [date, setDate] = useState(value.slice(0, 10))
+  const [hour, setHour] = useState(value.slice(11, 13) || '00')
+  const [minute, setMinute] = useState(value.slice(14, 16) || '00')
+
+  const emit = (d: string, h: string, m: string) => {
+    onChange(d ? `${d}T${h}:${m}` : '')
+  }
+
+  return (
+    <div className="flex gap-1">
+      <input
+        type="date"
+        value={date}
+        min={todayLocal()}
+        required={required}
+        onChange={(e) => { setDate(e.target.value); emit(e.target.value, hour, minute) }}
+        className="input flex-1"
+      />
+      <select
+        value={hour}
+        onChange={(e) => { setHour(e.target.value); emit(date, e.target.value, minute) }}
+        className="input w-16"
+      >
+        {HOURS.map((h) => <option key={h} value={h}>{h}</option>)}
+      </select>
+      <span className="self-center text-gray-500">:</span>
+      <select
+        value={minute}
+        onChange={(e) => { setMinute(e.target.value); emit(date, hour, e.target.value) }}
+        className="input w-16"
+      >
+        {MINUTES.map((m) => <option key={m} value={m}>{m}</option>)}
+      </select>
+    </div>
+  )
+}
+
+const StartTimeField = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => {
+  const [scheduled, setScheduled] = useState(false)
+
+  const toggle = () => {
+    if (scheduled) onChange('')
+    setScheduled((prev) => !prev)
+  }
+
+  return (
+    <div className="space-y-2">
+      <button
+        type="button"
+        onClick={toggle}
+        className={`w-full flex items-center justify-between px-3 py-2 rounded border text-sm transition-colors ${
+          scheduled
+            ? 'border-blue-500 bg-blue-50 text-blue-700'
+            : 'border-gray-300 bg-gray-50 text-gray-500 hover:bg-gray-100'
+        }`}
+      >
+        <span>{scheduled ? '예약 시작' : '즉시 시작'}</span>
+        <span className={`w-9 h-5 flex items-center rounded-full transition-colors ${scheduled ? 'bg-blue-500' : 'bg-gray-300'}`}>
+          <span className={`w-4 h-4 bg-white rounded-full shadow transform transition-transform ${scheduled ? 'translate-x-4' : 'translate-x-0.5'}`} />
+        </span>
+      </button>
+      {scheduled && (
+        <DateTimePicker value={value} onChange={onChange} />
+      )}
+    </div>
+  )
+}
+
 const conditionOptions: { value: ItemCondition; label: string }[] = [
   { value: 'NEW', label: '새 상품' },
   { value: 'LIKE_NEW', label: '거의 새 것' },
@@ -121,11 +204,14 @@ const AuctionCreatePage = () => {
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <Field label="경매 시작 시간 (선택)">
-            <input type="datetime-local" name="startTime" value={form.startTime} onChange={handleChange} className="input" />
+          <Field label="경매 시작 시간">
+            <StartTimeField
+              value={form.startTime}
+              onChange={(v) => setForm((p) => ({ ...p, startTime: v }))}
+            />
           </Field>
           <Field label="경매 종료 시간">
-            <input type="datetime-local" name="endTime" value={form.endTime} onChange={handleChange} required className="input" />
+            <DateTimePicker value={form.endTime} onChange={(v) => setForm((p) => ({ ...p, endTime: v }))} required />
           </Field>
         </div>
 

@@ -29,6 +29,7 @@ const AuctionDetailPage = () => {
   const [currentPrice, setCurrentPrice] = useState(0)
   const [bidCount, setBidCount] = useState(0)
   const [endTime, setEndTime] = useState('')
+  const [winnerId, setWinnerId] = useState<number | null>(null)
   const [selectedImage, setSelectedImage] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -50,6 +51,7 @@ const AuctionDetailPage = () => {
         setCurrentPrice(a.currentPrice)
         setBidCount(a.bidCount)
         setEndTime(a.endTime)
+        setWinnerId(a.winnerId)
         setBids(b.content)
         setSimilar(s)
       } catch {
@@ -66,6 +68,7 @@ const AuctionDetailPage = () => {
       if (msg.currentPrice !== undefined) setCurrentPrice(msg.currentPrice)
       if (msg.bidCount !== undefined) setBidCount(msg.bidCount)
       loadBids()
+      getAuction(auctionId).then(a => setWinnerId(a.winnerId)).catch(() => {})
     } else if (msg.type === 'COUNTDOWN_EXTENDED' && msg.newEndTime) {
       setEndTime(msg.newEndTime)
     } else if (msg.type === 'AUCTION_ENDED') {
@@ -73,7 +76,7 @@ const AuctionDetailPage = () => {
     } else if (msg.type === 'AUCTION_SOLD') {
       setAuction((prev) => prev ? { ...prev, status: 'SOLD' } : prev)
     }
-  }, [loadBids])
+  }, [loadBids, auctionId])
 
   useStomp(auctionId, handleWsMessage)
 
@@ -85,7 +88,8 @@ const AuctionDetailPage = () => {
     </div>
   )
 
-  const isMySelling = member?.memberId === auction.sellerId
+  const isMySelling = member?.memberId === auction.seller.memberId
+  const isHighestBidder = winnerId !== null && member?.memberId === winnerId
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
@@ -114,7 +118,7 @@ const AuctionDetailPage = () => {
         {/* 정보 */}
         <div className="space-y-4">
           <div>
-            <p className="text-xs text-gray-400">{auction.categoryName} · {conditionLabel[auction.condition]}</p>
+            <p className="text-xs text-gray-400">{auction.category.name} · {conditionLabel[auction.condition]}</p>
             <h1 className="text-xl font-bold text-gray-800 mt-1">{auction.title}</h1>
           </div>
 
@@ -139,7 +143,7 @@ const AuctionDetailPage = () => {
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-500">판매자</span>
-              <span className="text-sm text-gray-700">{auction.sellerNickname}</span>
+              <span className="text-sm text-gray-700">{auction.seller.nickname}</span>
             </div>
           </div>
 
@@ -149,7 +153,11 @@ const AuctionDetailPage = () => {
             buyNowPrice={auction.buyNowPrice}
             status={auction.status}
             isMySelling={isMySelling}
-            onBidSuccess={loadBids}
+            isHighestBidder={isHighestBidder}
+            onBidSuccess={() => {
+              loadBids()
+              getAuction(auctionId).then(a => setWinnerId(a.winnerId)).catch(() => {})
+            }}
           />
         </div>
       </div>

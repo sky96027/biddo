@@ -23,6 +23,7 @@ public class AuctionDetailResponse {
     private final int bidCount;
     private final int viewCount;
     private final AuctionStatus status;
+    private final Long winnerId;
     private final LocalDateTime startTime;
     private final LocalDateTime endTime;
     private final List<String> imageUrls;
@@ -49,6 +50,7 @@ public class AuctionDetailResponse {
         this.bidCount = auction.getBidCount();
         this.viewCount = auction.getViewCount();
         this.status = auction.getStatus();
+        this.winnerId = auction.getWinner() != null ? auction.getWinner().getId() : null;
         this.startTime = auction.getStartTime();
         this.endTime = auction.getEndTime();
         this.imageUrls = auction.getImages().stream()
