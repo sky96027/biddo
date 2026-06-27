@@ -1,0 +1,16 @@
+.git
+.gradle
+.github
+.claude
+docs
+front
+monitoring
+docker
+*.md
+
+biddo-domain/build
+biddo-infra/build
+biddo-api/build/classes
+biddo-api/build/generated
+biddo-api/build/resources
+biddo-api/build/tmp
