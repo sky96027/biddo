@@ -77,12 +77,12 @@ Redisson 분산 락을 스케줄러에 적용해 먼저 락을 획득한 1대만
 - [ ] EventBridge Scheduler 생성 (EC2 자동 시작/중지 cron)
 
 ### 2단계: 코드 수정
-- [ ] `@Scheduled` 메서드에 Redisson 분산 락 적용
-- [ ] docker-compose 분리: `docker-compose.infra.yml` / `docker-compose.app.yml`
+- [x] `@Scheduled` 메서드에 Redisson 분산 락 적용
+- [x] docker-compose 분리: `docker-compose.infra.yml` / `docker-compose.app.yml`
 - [ ] `application-prod.yml` 작성 (EC2-Infra 내부 IP 기준)
 
 ### 3단계: GitHub Actions CI/CD
-- [ ] `deploy.yml` 워크플로우 작성
+- [x] `deploy.yml` 워크플로우 작성
   - main push → Gradle 빌드 → Docker 이미지 빌드 → ECR 푸시
   - EC2-App-1 SSH → pull & restart → 헬스체크
   - EC2-App-2 SSH → pull & restart (롤링 배포)

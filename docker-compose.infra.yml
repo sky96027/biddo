@@ -11,6 +11,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
 
   redis-master:
     image: redis:7-alpine
@@ -20,6 +21,7 @@ services:
       - "6379:6379"
     volumes:
       - redis-master-data:/data
+    restart: unless-stopped
 
   redis-replica:
     image: redis:7-alpine
@@ -31,6 +33,7 @@ services:
       - redis-master
     volumes:
       - redis-replica-data:/data
+    restart: unless-stopped
 
   redis-sentinel-1:
     image: redis:7-alpine
@@ -45,6 +48,7 @@ services:
     depends_on:
       - redis-master
       - redis-replica
+    restart: unless-stopped
 
   redis-sentinel-2:
     image: redis:7-alpine
@@ -59,6 +63,7 @@ services:
     depends_on:
       - redis-master
       - redis-replica
+    restart: unless-stopped
 
   redis-sentinel-3:
     image: redis:7-alpine
@@ -73,6 +78,7 @@ services:
     depends_on:
       - redis-master
       - redis-replica
+    restart: unless-stopped
 
   kafka:
     image: confluentinc/cp-kafka:7.6.0
@@ -97,6 +103,7 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
+    restart: unless-stopped
 
   kafka-exporter:
     image: danielqsj/kafka-exporter:latest
@@ -137,10 +144,9 @@ services:
     ports:
       - "9091:9090"
     volumes:
-      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/prometheus/prometheus-prod.yml:/etc/prometheus/prometheus.yml
       - prometheus-data:/prometheus
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
 
   tempo:
     image: grafana/tempo:2.7.2
@@ -152,6 +158,7 @@ services:
     ports:
       - "3200:3200"
       - "4318:4318"
+    restart: unless-stopped
 
   grafana:
     image: grafana/grafana:11.6.0
@@ -162,11 +169,12 @@ services:
     ports:
       - "3000:3000"
     environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
     volumes:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
       - grafana-data:/var/lib/grafana
+    restart: unless-stopped
 
 volumes:
   postgres-data:

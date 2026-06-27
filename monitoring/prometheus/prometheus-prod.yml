@@ -1,0 +1,19 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'biddo-api'
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 5s
+    static_configs:
+      - targets:
+          - '10.0.8.212:9090'
+          - '10.0.16.58:9090'
+        labels:
+          application: 'biddo'
+
+  - job_name: 'kafka-exporter'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['kafka-exporter:9308']

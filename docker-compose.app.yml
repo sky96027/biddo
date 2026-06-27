@@ -1,0 +1,25 @@
+services:
+  biddo-app:
+    image: ${ECR_IMAGE}
+    container_name: biddo-app
+    ports:
+      - "9090:9090"
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_NAME: ${DB_NAME}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}
+      AWS_SECRET_KEY: ${AWS_SECRET_KEY}
+      AWS_REGION: ${AWS_REGION:-ap-northeast-2}
+      S3_BUCKET: ${S3_BUCKET}
+      CLOUDFRONT_DOMAIN: ${CLOUDFRONT_DOMAIN}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
