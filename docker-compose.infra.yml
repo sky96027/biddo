@@ -40,7 +40,12 @@ services:
     container_name: biddo-redis-sentinel-1
     command: >
       sh -c "
-        printf 'sentinel monitor biddo-master redis-master 6379 2\nsentinel down-after-milliseconds biddo-master 5000\nsentinel failover-timeout biddo-master 10000\nsentinel parallel-syncs biddo-master 1\n' > /tmp/sentinel.conf &&
+        echo 'sentinel resolve-hostnames yes' > /tmp/sentinel.conf &&
+        echo 'sentinel announce-hostnames yes' >> /tmp/sentinel.conf &&
+        echo 'sentinel monitor biddo-master redis-master 6379 2' >> /tmp/sentinel.conf &&
+        echo 'sentinel down-after-milliseconds biddo-master 5000' >> /tmp/sentinel.conf &&
+        echo 'sentinel failover-timeout biddo-master 10000' >> /tmp/sentinel.conf &&
+        echo 'sentinel parallel-syncs biddo-master 1' >> /tmp/sentinel.conf &&
         redis-sentinel /tmp/sentinel.conf
       "
     ports:
@@ -55,7 +60,12 @@ services:
     container_name: biddo-redis-sentinel-2
     command: >
       sh -c "
-        printf 'sentinel monitor biddo-master redis-master 6379 2\nsentinel down-after-milliseconds biddo-master 5000\nsentinel failover-timeout biddo-master 10000\nsentinel parallel-syncs biddo-master 1\n' > /tmp/sentinel.conf &&
+        echo 'sentinel resolve-hostnames yes' > /tmp/sentinel.conf &&
+        echo 'sentinel announce-hostnames yes' >> /tmp/sentinel.conf &&
+        echo 'sentinel monitor biddo-master redis-master 6379 2' >> /tmp/sentinel.conf &&
+        echo 'sentinel down-after-milliseconds biddo-master 5000' >> /tmp/sentinel.conf &&
+        echo 'sentinel failover-timeout biddo-master 10000' >> /tmp/sentinel.conf &&
+        echo 'sentinel parallel-syncs biddo-master 1' >> /tmp/sentinel.conf &&
         redis-sentinel /tmp/sentinel.conf
       "
     ports:
@@ -70,7 +80,12 @@ services:
     container_name: biddo-redis-sentinel-3
     command: >
       sh -c "
-        printf 'sentinel monitor biddo-master redis-master 6379 2\nsentinel down-after-milliseconds biddo-master 5000\nsentinel failover-timeout biddo-master 10000\nsentinel parallel-syncs biddo-master 1\n' > /tmp/sentinel.conf &&
+        echo 'sentinel resolve-hostnames yes' > /tmp/sentinel.conf &&
+        echo 'sentinel announce-hostnames yes' >> /tmp/sentinel.conf &&
+        echo 'sentinel monitor biddo-master redis-master 6379 2' >> /tmp/sentinel.conf &&
+        echo 'sentinel down-after-milliseconds biddo-master 5000' >> /tmp/sentinel.conf &&
+        echo 'sentinel failover-timeout biddo-master 10000' >> /tmp/sentinel.conf &&
+        echo 'sentinel parallel-syncs biddo-master 1' >> /tmp/sentinel.conf &&
         redis-sentinel /tmp/sentinel.conf
       "
     ports:
