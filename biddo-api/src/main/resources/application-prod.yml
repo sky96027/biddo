@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:postgresql://10.0.128.219:5432/${DB_NAME:biddo}?reWriteBatchedInserts=true
+    url: jdbc:postgresql://10.0.14.136:5432/${DB_NAME:biddo}?reWriteBatchedInserts=true
 
   jpa:
     hibernate:
@@ -14,15 +14,15 @@ spring:
     redis:
       sentinel:
         master: biddo-master
-        nodes: 10.0.128.219:26379,10.0.128.219:26380,10.0.128.219:26381
+        nodes: 10.0.14.136:26379,10.0.14.136:26380,10.0.14.136:26381
 
   elasticsearch:
-    uris: http://10.0.128.219:9200
+    uris: http://10.0.14.136:9200
 
   kafka:
-    bootstrap-servers: 10.0.128.219:9092
+    bootstrap-servers: 10.0.14.136:9092
 
 management:
   otlp:
     tracing:
-      endpoint: http://10.0.128.219:4318/v1/traces
+      endpoint: http://10.0.14.136:4318/v1/traces
