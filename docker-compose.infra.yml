@@ -26,7 +26,7 @@ services:
   redis-replica:
     image: redis:7-alpine
     container_name: biddo-redis-replica
-    command: redis-server --replicaof redis-master 6379 --notify-keyspace-events Ex
+    command: redis-server --replicaof redis-master 6379 --notify-keyspace-events Ex --replica-announce-ip 10.0.14.136 --replica-announce-port 6380
     ports:
       - "6380:6379"
     depends_on:
@@ -40,9 +40,9 @@ services:
     container_name: biddo-redis-sentinel-1
     command: >
       sh -c "
-        echo 'sentinel resolve-hostnames yes' > /tmp/sentinel.conf &&
-        echo 'sentinel announce-hostnames yes' >> /tmp/sentinel.conf &&
-        echo 'sentinel monitor biddo-master redis-master 6379 2' >> /tmp/sentinel.conf &&
+        echo 'sentinel announce-ip 10.0.14.136' > /tmp/sentinel.conf &&
+        echo 'sentinel announce-port 26379' >> /tmp/sentinel.conf &&
+        echo 'sentinel monitor biddo-master 10.0.14.136 6379 2' >> /tmp/sentinel.conf &&
         echo 'sentinel down-after-milliseconds biddo-master 5000' >> /tmp/sentinel.conf &&
         echo 'sentinel failover-timeout biddo-master 10000' >> /tmp/sentinel.conf &&
         echo 'sentinel parallel-syncs biddo-master 1' >> /tmp/sentinel.conf &&
@@ -60,9 +60,9 @@ services:
     container_name: biddo-redis-sentinel-2
     command: >
       sh -c "
-        echo 'sentinel resolve-hostnames yes' > /tmp/sentinel.conf &&
-        echo 'sentinel announce-hostnames yes' >> /tmp/sentinel.conf &&
-        echo 'sentinel monitor biddo-master redis-master 6379 2' >> /tmp/sentinel.conf &&
+        echo 'sentinel announce-ip 10.0.14.136' > /tmp/sentinel.conf &&
+        echo 'sentinel announce-port 26380' >> /tmp/sentinel.conf &&
+        echo 'sentinel monitor biddo-master 10.0.14.136 6379 2' >> /tmp/sentinel.conf &&
         echo 'sentinel down-after-milliseconds biddo-master 5000' >> /tmp/sentinel.conf &&
         echo 'sentinel failover-timeout biddo-master 10000' >> /tmp/sentinel.conf &&
         echo 'sentinel parallel-syncs biddo-master 1' >> /tmp/sentinel.conf &&
@@ -80,9 +80,9 @@ services:
     container_name: biddo-redis-sentinel-3
     command: >
       sh -c "
-        echo 'sentinel resolve-hostnames yes' > /tmp/sentinel.conf &&
-        echo 'sentinel announce-hostnames yes' >> /tmp/sentinel.conf &&
-        echo 'sentinel monitor biddo-master redis-master 6379 2' >> /tmp/sentinel.conf &&
+        echo 'sentinel announce-ip 10.0.14.136' > /tmp/sentinel.conf &&
+        echo 'sentinel announce-port 26381' >> /tmp/sentinel.conf &&
+        echo 'sentinel monitor biddo-master 10.0.14.136 6379 2' >> /tmp/sentinel.conf &&
         echo 'sentinel down-after-milliseconds biddo-master 5000' >> /tmp/sentinel.conf &&
         echo 'sentinel failover-timeout biddo-master 10000' >> /tmp/sentinel.conf &&
         echo 'sentinel parallel-syncs biddo-master 1' >> /tmp/sentinel.conf &&
