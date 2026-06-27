@@ -26,7 +26,8 @@ public class BidWebSocketConsumer {
     private final AuctionSseService auctionSseService;
 
     @Transactional(readOnly = true)
-    @KafkaListener(topics = KafkaConfig.BID_EVENTS, groupId = "biddo-websocket")
+    @KafkaListener(topics = KafkaConfig.BID_EVENTS,
+            groupId = "#{T(java.util.UUID).randomUUID().toString()}")
     public void handleBidEvent(BidEvent event) {
         if (!BidEvent.BID_PLACED.equals(event.getEventType())) {
             return;

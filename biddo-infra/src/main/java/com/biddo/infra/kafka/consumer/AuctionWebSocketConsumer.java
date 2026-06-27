@@ -18,7 +18,8 @@ public class AuctionWebSocketConsumer {
     private final SimpMessagingTemplate messagingTemplate;
     private final AuctionSseService auctionSseService;
 
-    @KafkaListener(topics = KafkaConfig.AUCTION_EVENTS, groupId = "biddo-websocket")
+    @KafkaListener(topics = KafkaConfig.AUCTION_EVENTS,
+            groupId = "#{T(java.util.UUID).randomUUID().toString()}")
     public void handleAuctionEvent(AuctionEvent event) {
         String type = switch (event.getEventType()) {
             case AuctionEvent.AUCTION_ENDED -> AuctionWebSocketMessage.AUCTION_ENDED;
