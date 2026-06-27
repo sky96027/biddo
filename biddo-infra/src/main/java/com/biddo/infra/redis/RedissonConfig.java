@@ -34,7 +34,8 @@ public class RedissonConfig {
                     .toArray(String[]::new);
             config.useSentinelServers()
                     .setMasterName(sentinelMaster)
-                    .addSentinelAddress(addresses);
+                    .addSentinelAddress(addresses)
+                    .setCheckSentinelsList(false);
         } else {
             config.useSingleServer()
                     .setAddress("redis://" + host + ":" + port);
