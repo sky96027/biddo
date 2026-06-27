@@ -70,9 +70,14 @@ cloud:
 
 server:
   port: 9090
+  shutdown: graceful
   tomcat:
     threads:
       max: 200
+
+spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
 
 logging:
   level:

@@ -2,6 +2,7 @@ package com.biddo.infra.sse;
 
 import com.biddo.domain.notification.entity.Notification;
 import com.biddo.domain.notification.port.out.NotificationPushPort;
+import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -65,6 +66,13 @@ public class NotificationSseAdapter implements NotificationPushPort {
                 removeEmitter(receiverId, emitter);
             }
         }
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        emitters.values().forEach(set -> set.forEach(SseEmitter::complete));
+        emitters.clear();
+        log.info("NotificationSseAdapter: all emitters completed on shutdown");
     }
 
     private void removeEmitter(Long memberId, SseEmitter emitter) {
