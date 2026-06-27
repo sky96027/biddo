@@ -1,5 +1,6 @@
 package com.biddo.infra.sse;
 
+import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -93,6 +94,13 @@ public class AuctionSseService {
                 removeEmitter(auctionId, emitter);
             }
         }
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        emitters.values().forEach(set -> set.forEach(SseEmitter::complete));
+        emitters.clear();
+        log.info("AuctionSseService: all emitters completed on shutdown");
     }
 
     private void removeEmitter(Long auctionId, SseEmitter emitter) {
