@@ -7,12 +7,13 @@ interface Props {
   buyNowPrice: number | null
   status: string
   isMySelling: boolean
+  isHighestBidder: boolean
   onBidSuccess: () => void
 }
 
 const formatPrice = (p: number) => p.toLocaleString('ko-KR') + '원'
 
-const BidForm = ({ auctionId, currentPrice, buyNowPrice, status, isMySelling, onBidSuccess }: Props) => {
+const BidForm = ({ auctionId, currentPrice, buyNowPrice, status, isMySelling, isHighestBidder, onBidSuccess }: Props) => {
   const [tab, setTab] = useState<'manual' | 'auto'>('manual')
   const [bidAmount, setBidAmount] = useState('')
   const [maxAmount, setMaxAmount] = useState('')
@@ -88,6 +89,7 @@ const BidForm = ({ auctionId, currentPrice, buyNowPrice, status, isMySelling, on
 
   if (isMySelling) return <p className="text-sm text-gray-400 p-4 bg-gray-50 rounded-lg text-center">내가 등록한 경매입니다.</p>
   if (!isActive) return <p className="text-sm text-gray-400 p-4 bg-gray-50 rounded-lg text-center">경매가 진행 중이 아닙니다.</p>
+  if (isHighestBidder) return <p className="text-sm text-blue-600 p-4 bg-blue-50 rounded-lg text-center">현재 최상위 입찰자입니다.</p>
 
   return (
     <div className="border border-gray-200 rounded-lg p-4 space-y-3">

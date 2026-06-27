@@ -75,6 +75,7 @@ public class BidService {
 
         validateActive(auction);
         validateNotSeller(auction, bidderId);
+        validateNotCurrentHighestBidder(auction, bidderId);
         validateBidAmount(auction, bidAmount);
 
         Bid bid = createBid(auction, bidder, bidAmount, BidType.MANUAL);
@@ -243,6 +244,12 @@ public class BidService {
     private void validateNotSeller(Auction auction, Long bidderId) {
         if (auction.isSeller(bidderId)) {
             throw new BusinessException(BidErrorCode.SELF_BID_NOT_ALLOWED);
+        }
+    }
+
+    private void validateNotCurrentHighestBidder(Auction auction, Long bidderId) {
+        if (auction.getWinner() != null && auction.getWinner().getId().equals(bidderId)) {
+            throw new BusinessException(BidErrorCode.ALREADY_HIGHEST_BIDDER);
         }
     }
 
