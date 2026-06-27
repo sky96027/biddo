@@ -1,0 +1,186 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: biddo-postgres
+    env_file: .env
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis-master:
+    image: redis:7-alpine
+    container_name: biddo-redis-master
+    command: redis-server --notify-keyspace-events Ex
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-master-data:/data
+    restart: unless-stopped
+
+  redis-replica:
+    image: redis:7-alpine
+    container_name: biddo-redis-replica
+    command: redis-server --replicaof redis-master 6379 --notify-keyspace-events Ex
+    ports:
+      - "6380:6379"
+    depends_on:
+      - redis-master
+    volumes:
+      - redis-replica-data:/data
+    restart: unless-stopped
+
+  redis-sentinel-1:
+    image: redis:7-alpine
+    container_name: biddo-redis-sentinel-1
+    command: >
+      sh -c "
+        printf 'sentinel monitor biddo-master redis-master 6379 2\nsentinel down-after-milliseconds biddo-master 5000\nsentinel failover-timeout biddo-master 10000\nsentinel parallel-syncs biddo-master 1\n' > /tmp/sentinel.conf &&
+        redis-sentinel /tmp/sentinel.conf
+      "
+    ports:
+      - "26379:26379"
+    depends_on:
+      - redis-master
+      - redis-replica
+    restart: unless-stopped
+
+  redis-sentinel-2:
+    image: redis:7-alpine
+    container_name: biddo-redis-sentinel-2
+    command: >
+      sh -c "
+        printf 'sentinel monitor biddo-master redis-master 6379 2\nsentinel down-after-milliseconds biddo-master 5000\nsentinel failover-timeout biddo-master 10000\nsentinel parallel-syncs biddo-master 1\n' > /tmp/sentinel.conf &&
+        redis-sentinel /tmp/sentinel.conf
+      "
+    ports:
+      - "26380:26379"
+    depends_on:
+      - redis-master
+      - redis-replica
+    restart: unless-stopped
+
+  redis-sentinel-3:
+    image: redis:7-alpine
+    container_name: biddo-redis-sentinel-3
+    command: >
+      sh -c "
+        printf 'sentinel monitor biddo-master redis-master 6379 2\nsentinel down-after-milliseconds biddo-master 5000\nsentinel failover-timeout biddo-master 10000\nsentinel parallel-syncs biddo-master 1\n' > /tmp/sentinel.conf &&
+        redis-sentinel /tmp/sentinel.conf
+      "
+    ports:
+      - "26381:26379"
+    depends_on:
+      - redis-master
+      - redis-replica
+    restart: unless-stopped
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: biddo-kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,INTERNAL://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://${KAFKA_ADVERTISED_HOST:-localhost}:9092,INTERNAL://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  kafka-exporter:
+    image: danielqsj/kafka-exporter:latest
+    container_name: biddo-kafka-exporter
+    command:
+      - "--kafka.server=kafka:29092"
+    ports:
+      - "9308:9308"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: on-failure
+
+  elasticsearch:
+    build:
+      context: docker/elasticsearch
+      dockerfile: Dockerfile
+    container_name: biddo-elasticsearch
+    ports:
+      - "9200:9200"
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: on-failure
+
+  prometheus:
+    image: prom/prometheus:v3.4.1
+    container_name: biddo-prometheus
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus-prod.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    restart: unless-stopped
+
+  tempo:
+    image: grafana/tempo:2.7.2
+    container_name: biddo-tempo
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./monitoring/tempo/tempo.yaml:/etc/tempo.yaml
+      - tempo-data:/var/tempo
+    ports:
+      - "3200:3200"
+      - "4318:4318"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.6.0
+    container_name: biddo-grafana
+    depends_on:
+      - prometheus
+      - tempo
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - grafana-data:/var/lib/grafana
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  redis-master-data:
+  redis-replica-data:
+  elasticsearch-data:
+  prometheus-data:
+  tempo-data:
+  grafana-data:
