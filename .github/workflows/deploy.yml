@@ -164,3 +164,40 @@ jobs:
             done
             echo "헬스체크 타임아웃"
             exit 1
+
+  deploy-frontend:
+    name: Deploy Frontend to S3
+    needs: deploy-app-2
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: front/package-lock.json
+
+      - name: 의존성 설치
+        run: npm ci
+        working-directory: front
+
+      - name: 빌드
+        run: npm run build
+        working-directory: front
+
+      - name: AWS 자격증명 설정
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: S3 업로드
+        run: aws s3 sync front/dist/ s3://${{ secrets.FRONTEND_BUCKET }} --delete
+
+      - name: CloudFront 캐시 무효화
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*"

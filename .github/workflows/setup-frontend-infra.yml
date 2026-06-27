@@ -1,0 +1,165 @@
+name: Frontend 인프라 초기 설정
+
+on:
+  workflow_dispatch:
+
+jobs:
+  setup:
+    name: S3 + CloudFront 생성
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ap-northeast-2
+      BUCKET_NAME: biddo-front-730335638220
+      ALB_DOMAIN: biddo-alb-1189903426.ap-northeast-2.elb.amazonaws.com
+
+    steps:
+      - name: AWS 자격증명 설정
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
+
+      - name: S3 버킷 생성
+        run: |
+          aws s3api create-bucket \
+            --bucket $BUCKET_NAME \
+            --region ap-northeast-2 \
+            --create-bucket-configuration LocationConstraint=ap-northeast-2
+
+      - name: 퍼블릭 액세스 차단 해제
+        run: |
+          aws s3api put-public-access-block \
+            --bucket $BUCKET_NAME \
+            --public-access-block-configuration \
+              BlockPublicAcls=false,IgnorePublicAcls=false,BlockPublicPolicy=false,RestrictPublicBuckets=false
+
+      - name: 버킷 퍼블릭 읽기 정책 적용
+        run: |
+          aws s3api put-bucket-policy \
+            --bucket $BUCKET_NAME \
+            --policy "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":\"*\",\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::${BUCKET_NAME}/*\"}]}"
+
+      - name: 정적 웹사이트 호스팅 설정
+        run: |
+          aws s3 website s3://$BUCKET_NAME \
+            --index-document index.html \
+            --error-document index.html
+
+      - name: CloudFront 배포 설정 파일 작성
+        run: |
+          cat > cf-config.json << 'EOF'
+          {
+            "CallerReference": "CALLER_REF",
+            "Comment": "biddo frontend",
+            "Origins": {
+              "Quantity": 2,
+              "Items": [
+                {
+                  "Id": "S3-biddo-front",
+                  "DomainName": "BUCKET_DOMAIN",
+                  "CustomOriginConfig": {
+                    "HTTPPort": 80,
+                    "HTTPSPort": 443,
+                    "OriginProtocolPolicy": "http-only"
+                  }
+                },
+                {
+                  "Id": "ALB-biddo",
+                  "DomainName": "ALB_DOMAIN_PLACEHOLDER",
+                  "CustomOriginConfig": {
+                    "HTTPPort": 80,
+                    "HTTPSPort": 443,
+                    "OriginProtocolPolicy": "http-only"
+                  }
+                }
+              ]
+            },
+            "DefaultCacheBehavior": {
+              "TargetOriginId": "S3-biddo-front",
+              "ViewerProtocolPolicy": "redirect-to-https",
+              "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6",
+              "AllowedMethods": {
+                "Quantity": 2,
+                "Items": ["GET", "HEAD"],
+                "CachedMethods": { "Quantity": 2, "Items": ["GET", "HEAD"] }
+              },
+              "Compress": true
+            },
+            "CacheBehaviors": {
+              "Quantity": 2,
+              "Items": [
+                {
+                  "PathPattern": "/api/*",
+                  "TargetOriginId": "ALB-biddo",
+                  "ViewerProtocolPolicy": "allow-all",
+                  "CachePolicyId": "4135ea2d-6df8-44a3-9df3-4b5a84be39ad",
+                  "OriginRequestPolicyId": "b689b0a8-53d0-40ab-baf2-68738e2966ac",
+                  "AllowedMethods": {
+                    "Quantity": 7,
+                    "Items": ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"],
+                    "CachedMethods": { "Quantity": 2, "Items": ["GET", "HEAD"] }
+                  },
+                  "Compress": false
+                },
+                {
+                  "PathPattern": "/ws/*",
+                  "TargetOriginId": "ALB-biddo",
+                  "ViewerProtocolPolicy": "allow-all",
+                  "CachePolicyId": "4135ea2d-6df8-44a3-9df3-4b5a84be39ad",
+                  "OriginRequestPolicyId": "b689b0a8-53d0-40ab-baf2-68738e2966ac",
+                  "AllowedMethods": {
+                    "Quantity": 7,
+                    "Items": ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"],
+                    "CachedMethods": { "Quantity": 2, "Items": ["GET", "HEAD"] }
+                  },
+                  "Compress": false
+                }
+              ]
+            },
+            "CustomErrorResponses": {
+              "Quantity": 2,
+              "Items": [
+                {
+                  "ErrorCode": 403,
+                  "ResponseCode": "200",
+                  "ResponsePagePath": "/index.html",
+                  "ErrorCachingMinTTL": 0
+                },
+                {
+                  "ErrorCode": 404,
+                  "ResponseCode": "200",
+                  "ResponsePagePath": "/index.html",
+                  "ErrorCachingMinTTL": 0
+                }
+              ]
+            },
+            "HttpVersion": "http2",
+            "Enabled": true,
+            "PriceClass": "PriceClass_200"
+          }
+          EOF
+          sed -i "s|CALLER_REF|biddo-front-$(date +%s)|g" cf-config.json
+          sed -i "s|BUCKET_DOMAIN|${BUCKET_NAME}.s3-website.ap-northeast-2.amazonaws.com|g" cf-config.json
+          sed -i "s|ALB_DOMAIN_PLACEHOLDER|${ALB_DOMAIN}|g" cf-config.json
+
+      - name: CloudFront 배포 생성
+        id: cf
+        run: |
+          RESULT=$(aws cloudfront create-distribution --distribution-config file://cf-config.json)
+          DISTRIBUTION_ID=$(echo "$RESULT" | jq -r '.Distribution.Id')
+          CF_DOMAIN=$(echo "$RESULT" | jq -r '.Distribution.DomainName')
+          echo "distribution_id=$DISTRIBUTION_ID" >> $GITHUB_OUTPUT
+          echo "cf_domain=$CF_DOMAIN" >> $GITHUB_OUTPUT
+
+      - name: 결과 출력
+        run: |
+          echo "=============================="
+          echo "✅ 인프라 설정 완료"
+          echo "=============================="
+          echo ""
+          echo "CloudFront URL: https://${{ steps.cf.outputs.cf_domain }}"
+          echo ""
+          echo "GitHub Secrets에 다음 두 값을 추가하세요:"
+          echo "  FRONTEND_BUCKET=$BUCKET_NAME"
+          echo "  CLOUDFRONT_DISTRIBUTION_ID=${{ steps.cf.outputs.distribution_id }}"
