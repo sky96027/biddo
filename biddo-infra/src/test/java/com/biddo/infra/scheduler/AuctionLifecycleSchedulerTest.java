@@ -3,6 +3,7 @@ package com.biddo.infra.scheduler;
 import com.biddo.domain.auction.entity.Auction;
 import com.biddo.domain.auction.port.out.AuctionRepository;
 import com.biddo.domain.auction.service.AuctionService;
+import com.biddo.infra.redis.SchedulerLockExecutor;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -17,9 +18,9 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AuctionLifecycleScheduler")
@@ -31,13 +32,18 @@ class AuctionLifecycleSchedulerTest {
     @Mock
     private AuctionService auctionService;
 
+    @Mock
+    private SchedulerLockExecutor schedulerLockExecutor;
+
     private MeterRegistry meterRegistry;
     private AuctionLifecycleScheduler scheduler;
 
     @BeforeEach
     void setUp() {
         meterRegistry = new SimpleMeterRegistry();
-        scheduler = new AuctionLifecycleScheduler(auctionRepository, auctionService, meterRegistry);
+        lenient().doAnswer(inv -> { inv.getArgument(2, Runnable.class).run(); return null; })
+                .when(schedulerLockExecutor).tryExecuteWithLock(any(), anyLong(), any());
+        scheduler = new AuctionLifecycleScheduler(auctionRepository, auctionService, meterRegistry, schedulerLockExecutor);
     }
 
     @Test
@@ -163,6 +169,20 @@ class AuctionLifecycleSchedulerTest {
         verify(auctionService, never()).endAuction(any());
 
         assertThat(meterRegistry.find("auction.lifecycle.processed").counter()).isNull();
+    }
+
+    @Test
+    @DisplayName("락 획득 실패 시 경매 처리를 건너뛴다")
+    void processAuctionLifecycle_lockNotAcquired_skipsProcessing() {
+        // given: mock이 액션을 실행하지 않음
+        doNothing().when(schedulerLockExecutor).tryExecuteWithLock(any(), anyLong(), any());
+
+        // when
+        scheduler.processAuctionLifecycle();
+
+        // then
+        verify(auctionRepository, never()).findPendingAuctionsToActivate(any());
+        verify(auctionRepository, never()).findActiveAuctionsToEnd(any());
     }
 
     private Auction mockAuction(Long id) {

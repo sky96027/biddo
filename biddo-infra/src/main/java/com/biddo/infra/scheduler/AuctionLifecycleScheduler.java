@@ -3,6 +3,7 @@ package com.biddo.infra.scheduler;
 import com.biddo.domain.auction.entity.Auction;
 import com.biddo.domain.auction.port.out.AuctionRepository;
 import com.biddo.domain.auction.service.AuctionService;
+import com.biddo.infra.redis.SchedulerLockExecutor;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
@@ -18,12 +19,20 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AuctionLifecycleScheduler {
 
+    private static final String LOCK_KEY = "scheduler:lock:auction-lifecycle";
+    private static final long LEASE_TIME_SECONDS = 55;
+
     private final AuctionRepository auctionRepository;
     private final AuctionService auctionService;
     private final MeterRegistry meterRegistry;
+    private final SchedulerLockExecutor schedulerLockExecutor;
 
     @Scheduled(fixedRate = 60_000)
     public void processAuctionLifecycle() {
+        schedulerLockExecutor.tryExecuteWithLock(LOCK_KEY, LEASE_TIME_SECONDS, this::doProcess);
+    }
+
+    private void doProcess() {
         LocalDateTime now = LocalDateTime.now();
 
         List<Auction> toActivate = auctionRepository.findPendingAuctionsToActivate(now);
