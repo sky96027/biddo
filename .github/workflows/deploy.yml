@@ -42,6 +42,9 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle.kts') }}
           restore-keys: ${{ runner.os }}-gradle-
 
+      - name: gradlew 실행 권한 부여
+        run: chmod +x gradlew
+
       - name: 테스트
         run: ./gradlew test
 
@@ -65,6 +68,9 @@ jobs:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle.kts') }}
           restore-keys: ${{ runner.os }}-gradle-
+
+      - name: gradlew 실행 권한 부여
+        run: chmod +x gradlew
 
       - name: bootJar 빌드
         run: ./gradlew :biddo-api:bootJar -x test
