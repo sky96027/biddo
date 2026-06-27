@@ -1,7 +1,7 @@
 package com.biddo.infra.sse;
 
 import com.biddo.domain.notification.entity.Notification;
-import com.biddo.domain.notification.port.out.NotificationPushPort;
+import com.biddo.infra.kafka.event.NotificationPushEvent;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -15,7 +15,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 @Slf4j
 @Component
-public class NotificationSseAdapter implements NotificationPushPort {
+public class NotificationSseAdapter {
 
     private static final long SSE_TIMEOUT = 30 * 60 * 1000L; // 30분
 
@@ -40,7 +40,6 @@ public class NotificationSseAdapter implements NotificationPushPort {
         return emitter;
     }
 
-    @Override
     public void push(Long receiverId, Notification notification) {
         Set<SseEmitter> memberEmitters = emitters.get(receiverId);
         if (memberEmitters == null || memberEmitters.isEmpty()) {
@@ -55,17 +54,24 @@ public class NotificationSseAdapter implements NotificationPushPort {
                 "createdAt", notification.getCreatedAt().toString()
         );
 
-        for (SseEmitter emitter : memberEmitters) {
-            try {
-                emitter.send(SseEmitter.event()
-                        .id(String.valueOf(notification.getId()))
-                        .name("notification")
-                        .data(data));
-            } catch (IOException e) {
-                log.debug("Failed to send SSE notification, removing emitter: memberId={}", receiverId);
-                removeEmitter(receiverId, emitter);
-            }
+        sendToEmitters(receiverId, memberEmitters, String.valueOf(notification.getId()), data);
+    }
+
+    public void pushDirect(Long receiverId, NotificationPushEvent event) {
+        Set<SseEmitter> memberEmitters = emitters.get(receiverId);
+        if (memberEmitters == null || memberEmitters.isEmpty()) {
+            return;
         }
+
+        Map<String, Object> data = Map.of(
+                "notificationId", event.getNotificationId(),
+                "auctionId", event.getAuctionId() != null ? event.getAuctionId() : "",
+                "type", event.getType(),
+                "message", event.getMessage(),
+                "createdAt", event.getCreatedAt().toString()
+        );
+
+        sendToEmitters(receiverId, memberEmitters, String.valueOf(event.getNotificationId()), data);
     }
 
     @PreDestroy
@@ -73,6 +79,20 @@ public class NotificationSseAdapter implements NotificationPushPort {
         emitters.values().forEach(set -> set.forEach(SseEmitter::complete));
         emitters.clear();
         log.info("NotificationSseAdapter: all emitters completed on shutdown");
+    }
+
+    private void sendToEmitters(Long memberId, Set<SseEmitter> memberEmitters, String eventId, Map<String, Object> data) {
+        for (SseEmitter emitter : memberEmitters) {
+            try {
+                emitter.send(SseEmitter.event()
+                        .id(eventId)
+                        .name("notification")
+                        .data(data));
+            } catch (IOException e) {
+                log.debug("Failed to send SSE notification, removing emitter: memberId={}", memberId);
+                removeEmitter(memberId, emitter);
+            }
+        }
     }
 
     private void removeEmitter(Long memberId, SseEmitter emitter) {
