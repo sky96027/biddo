@@ -52,8 +52,6 @@ jobs:
     name: Build & Push to ECR
     needs: test
     runs-on: ubuntu-latest
-    outputs:
-      image: ${{ steps.build.outputs.image }}
     steps:
       - uses: actions/checkout@v4
 
@@ -86,12 +84,10 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: 이미지 빌드 및 푸시
-        id: build
         run: |
           IMAGE=${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
           docker build -t $IMAGE .
           docker push $IMAGE
-          echo "image=$IMAGE" >> $GITHUB_OUTPUT
 
   deploy-app-1:
     name: Deploy to EC2-App-1
@@ -106,7 +102,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -e
-            ECR_IMAGE="${{ needs.build-and-push.outputs.image }}"
+            ECR_IMAGE="${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}"
 
             aws ecr get-login-password --region ap-northeast-2 | \
               docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
@@ -144,7 +140,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -e
-            ECR_IMAGE="${{ needs.build-and-push.outputs.image }}"
+            ECR_IMAGE="${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}"
 
             aws ecr get-login-password --region ap-northeast-2 | \
               docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
