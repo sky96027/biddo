@@ -6,24 +6,16 @@ services:
       - "9090:9090"
     env_file: .env
     environment:
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT:-5432}
+      SPRING_PROFILES_ACTIVE: prod
       DB_NAME: ${DB_NAME}
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
-      REDIS_HOST: ${REDIS_HOST}
-      REDIS_PORT: ${REDIS_PORT:-26379}
-      REDIS_SENTINEL_MASTER: ${REDIS_SENTINEL_MASTER}
-      REDIS_SENTINEL_NODES: ${REDIS_SENTINEL_NODES}
-      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
-      ELASTICSEARCH_URI: ${ELASTICSEARCH_URI}
       JWT_SECRET: ${JWT_SECRET}
       AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}
       AWS_SECRET_KEY: ${AWS_SECRET_KEY}
       AWS_REGION: ${AWS_REGION:-ap-northeast-2}
       S3_BUCKET: ${S3_BUCKET}
       CLOUDFRONT_DOMAIN: ${CLOUDFRONT_DOMAIN}
-      TEMPO_ENDPOINT: ${TEMPO_ENDPOINT}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9090/actuator/health"]
       interval: 30s

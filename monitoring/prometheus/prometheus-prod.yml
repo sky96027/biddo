@@ -8,8 +8,8 @@ scrape_configs:
     scrape_interval: 5s
     static_configs:
       - targets:
-          - 'REPLACE_EC2_APP_1_PRIVATE_IP:9090'
-          - 'REPLACE_EC2_APP_2_PRIVATE_IP:9090'
+          - '10.0.8.212:9090'
+          - '10.0.16.58:9090'
         labels:
           application: 'biddo'
 

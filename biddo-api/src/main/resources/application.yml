@@ -57,6 +57,9 @@ spring:
       observation-enabled: true
       concurrency: 3
 
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
 cloud:
   aws:
     credentials:
@@ -74,10 +77,6 @@ server:
   tomcat:
     threads:
       max: 200
-
-spring:
-  lifecycle:
-    timeout-per-shutdown-phase: 30s
 
 logging:
   level:
