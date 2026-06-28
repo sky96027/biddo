@@ -191,12 +191,12 @@ class ConcurrentBidIntegrationTest extends IntegrationTestBase {
         // 자동입찰 설정: 최대 50,000원
         bidService.setAutoBid(auctionId, autoBidder.getId(), 50_000L);
 
-        // when: 수동 입찰 11,000원
-        bidService.placeBid(auctionId, manualBidder.getId(), 11_000L);
+        // when: 수동 입찰 (setAutoBid로 currentPrice=11,000 → minBid=11,600 이상 필요)
+        bidService.placeBid(auctionId, manualBidder.getId(), 12_000L);
 
-        // then: 자동입찰이 연쇄 발동 → 현재가 > 11,000
+        // then: 프록시 입찰 발동 → 현재가 > 12,000, autoBidder 낙찰
         Auction updated = auctionRepository.findById(auctionId).orElseThrow();
-        assertThat(updated.getCurrentPrice()).isGreaterThan(11_000L);
+        assertThat(updated.getCurrentPrice()).isGreaterThan(12_000L);
         assertThat(updated.getWinner().getId()).isEqualTo(autoBidder.getId());
         assertThat(updated.getBidCount()).isGreaterThanOrEqualTo(2); // 수동 1 + 자동 1+
 
@@ -206,8 +206,8 @@ class ConcurrentBidIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
-    @DisplayName("자동입찰 연쇄는 최대 10회로 제한된다")
-    void placeBid_두자동입찰자가충분한금액설정_연쇄최대10회로제한() {
+    @DisplayName("두 자동 입찰자 경쟁 시 프록시 입찰로 단건만 추가 발생한다")
+    void setAutoBid_두자동입찰자경쟁_프록시입찰단건발생() {
         // given
         Auction auction = createActiveAuction(seller, category, 10_000L, null);
         Long auctionId = auction.getId();
@@ -216,15 +216,16 @@ class ConcurrentBidIntegrationTest extends IntegrationTestBase {
         Member autoBidder2 = createMember("auto2@test.com", "자동2");
         Member manualBidder = createMember("trigger@test.com", "트리거");
 
-        // 두 자동입찰자가 충분히 높은 금액 설정 → 서로 연쇄 가능
-        bidService.setAutoBid(auctionId, autoBidder1.getId(), 10_000_000L);
-        bidService.setAutoBid(auctionId, autoBidder2.getId(), 10_000_000L);
+        // autoBidder1 등록(300K): 경쟁 없음 → 11K 입찰 (bidCount=1)
+        bidService.setAutoBid(auctionId, autoBidder1.getId(), 300_000L);
+        // autoBidder2 등록(500K): autoBidder2 승리 → proxyPrice=309K (bidCount=2), autoBidder1 비활성화
+        bidService.setAutoBid(auctionId, autoBidder2.getId(), 500_000L);
+        // 수동 입찰(320K): autoBidder2 프록시 재발동 → 329,600 (bidCount=4)
+        bidService.placeBid(auctionId, manualBidder.getId(), 320_000L);
 
-        // when: 수동 입찰로 연쇄 트리거
-        bidService.placeBid(auctionId, manualBidder.getId(), 11_000L);
-
-        // then: 수동 1 + 자동 최대 10 = 총 11 이하
+        // then: 프록시 방식으로 최대 4건, autoBidder2 낙찰
         Auction updated = auctionRepository.findById(auctionId).orElseThrow();
-        assertThat(updated.getBidCount()).isLessThanOrEqualTo(11);
+        assertThat(updated.getBidCount()).isLessThanOrEqualTo(4);
+        assertThat(updated.getWinner().getId()).isEqualTo(autoBidder2.getId());
     }
 }

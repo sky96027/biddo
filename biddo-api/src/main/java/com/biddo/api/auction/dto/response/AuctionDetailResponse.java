@@ -3,6 +3,7 @@ package com.biddo.api.auction.dto.response;
 import com.biddo.domain.auction.entity.Auction;
 import com.biddo.domain.auction.entity.AuctionStatus;
 import com.biddo.domain.auction.entity.ItemCondition;
+import com.biddo.domain.bid.service.BidService;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
@@ -19,6 +20,7 @@ public class AuctionDetailResponse {
     private final ItemCondition condition;
     private final Long startingPrice;
     private final Long currentPrice;
+    private final Long minimumBidAmount;
     private final Long buyNowPrice;
     private final int bidCount;
     private final int viewCount;
@@ -46,6 +48,7 @@ public class AuctionDetailResponse {
         this.condition = auction.getCondition();
         this.startingPrice = auction.getStartingPrice();
         this.currentPrice = auction.getCurrentPrice();
+        this.minimumBidAmount = auction.getCurrentPrice() + BidService.calculateMinIncrement(auction.getCurrentPrice());
         this.buyNowPrice = auction.getBuyNowPrice();
         this.bidCount = auction.getBidCount();
         this.viewCount = auction.getViewCount();

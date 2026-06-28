@@ -27,6 +27,7 @@ const AuctionDetailPage = () => {
   const [bids, setBids] = useState<BidHistoryItem[]>([])
   const [similar, setSimilar] = useState<AuctionSummary[]>([])
   const [currentPrice, setCurrentPrice] = useState(0)
+  const [minimumBidAmount, setMinimumBidAmount] = useState(0)
   const [bidCount, setBidCount] = useState(0)
   const [endTime, setEndTime] = useState('')
   const [winnerId, setWinnerId] = useState<number | null>(null)
@@ -49,6 +50,7 @@ const AuctionDetailPage = () => {
         ])
         setAuction(a)
         setCurrentPrice(a.currentPrice)
+        setMinimumBidAmount(a.minimumBidAmount)
         setBidCount(a.bidCount)
         setEndTime(a.endTime)
         setWinnerId(a.winnerId)
@@ -68,7 +70,10 @@ const AuctionDetailPage = () => {
       if (msg.currentPrice !== undefined) setCurrentPrice(msg.currentPrice)
       if (msg.bidCount !== undefined) setBidCount(msg.bidCount)
       loadBids()
-      getAuction(auctionId).then(a => setWinnerId(a.winnerId)).catch(() => {})
+      getAuction(auctionId).then(a => {
+        setWinnerId(a.winnerId)
+        setMinimumBidAmount(a.minimumBidAmount)
+      }).catch(() => {})
     } else if (msg.type === 'COUNTDOWN_EXTENDED' && msg.newEndTime) {
       setEndTime(msg.newEndTime)
     } else if (msg.type === 'AUCTION_ENDED') {
@@ -150,13 +155,17 @@ const AuctionDetailPage = () => {
           <BidForm
             auctionId={auctionId}
             currentPrice={currentPrice}
+            minimumBidAmount={minimumBidAmount}
             buyNowPrice={auction.buyNowPrice}
             status={auction.status}
             isMySelling={isMySelling}
             isHighestBidder={isHighestBidder}
             onBidSuccess={() => {
               loadBids()
-              getAuction(auctionId).then(a => setWinnerId(a.winnerId)).catch(() => {})
+              getAuction(auctionId).then(a => {
+                setWinnerId(a.winnerId)
+                setMinimumBidAmount(a.minimumBidAmount)
+              }).catch(() => {})
             }}
           />
         </div>

@@ -60,6 +60,7 @@ export interface AuctionDetail {
   condition: ItemCondition
   currentPrice: number
   startingPrice: number
+  minimumBidAmount: number
   buyNowPrice: number | null
   bidCount: number
   viewCount: number

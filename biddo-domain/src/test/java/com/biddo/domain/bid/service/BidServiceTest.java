@@ -238,8 +238,105 @@ class BidServiceTest {
     class SetAutoBidTest {
 
         @Test
-        @DisplayName("자동 입찰 설정 성공")
-        void setAutoBid_newSetting_success() {
+        @DisplayName("경쟁자 없음 - 최소 입찰가로 즉시 낙찰")
+        void setAutoBid_noCompetitor_placesMinBid() {
+            AutoBid bAutoBid = AutoBid.builder().auction(auction).bidder(bidder).maxAmount(800_000L).build();
+            setId(bAutoBid, 1L);
+
+            given(auctionService.findAuctionById(1L)).willReturn(auction);
+            given(memberService.findById(2L)).willReturn(bidder);
+            given(autoBidRepository.findByAuctionIdAndBidderId(1L, 2L))
+                    .willReturn(Optional.empty())
+                    .willReturn(Optional.of(bAutoBid));
+            given(autoBidRepository.save(any(AutoBid.class))).willReturn(bAutoBid);
+            given(autoBidRepository.findActiveByAuctionIdExcludingBidder(anyLong(), anyLong()))
+                    .willReturn(Collections.emptyList());
+            given(bidRepository.save(any(Bid.class))).willAnswer(inv -> {
+                Bid bid = inv.getArgument(0);
+                setId(bid, 99L);
+                return bid;
+            });
+
+            bidService.setAutoBid(1L, 2L, 800_000L);
+
+            // currentPrice=500_000 → minBid=515_000
+            assertThat(auction.getCurrentPrice()).isEqualTo(515_000L);
+            verify(bidEventPublisher).publishBidPlaced(any(Bid.class));
+        }
+
+        @Test
+        @DisplayName("경쟁자보다 높은 한도 - 프록시 가격으로 낙찰")
+        void setAutoBid_beatsCompetitor_winsAtProxyPrice() {
+            // B(bidder, max=800K) vs A(bidder2, max=600K)
+            AutoBid competitorAutoBid = AutoBid.builder()
+                    .auction(auction).bidder(bidder2).maxAmount(600_000L).build();
+            setId(competitorAutoBid, 2L);
+
+            AutoBid bAutoBid = AutoBid.builder().auction(auction).bidder(bidder).maxAmount(800_000L).build();
+            setId(bAutoBid, 1L);
+
+            setField(auction, "winner", bidder2);
+
+            given(auctionService.findAuctionById(1L)).willReturn(auction);
+            given(memberService.findById(2L)).willReturn(bidder);
+            given(autoBidRepository.findByAuctionIdAndBidderId(1L, 2L))
+                    .willReturn(Optional.empty())
+                    .willReturn(Optional.of(bAutoBid));
+            given(autoBidRepository.save(any(AutoBid.class))).willReturn(bAutoBid);
+            given(autoBidRepository.findActiveByAuctionIdExcludingBidder(1L, 2L))
+                    .willReturn(List.of(competitorAutoBid));
+            given(bidRepository.save(any(Bid.class))).willAnswer(inv -> {
+                Bid bid = inv.getArgument(0);
+                setId(bid, 99L);
+                return bid;
+            });
+
+            bidService.setAutoBid(1L, 2L, 800_000L);
+
+            // proxyPrice = min(600K + 18K, 800K) = 618K; B(bidder) 낙찰
+            assertThat(auction.getCurrentPrice()).isEqualTo(618_000L);
+            assertThat(competitorAutoBid.isActive()).isFalse();
+        }
+
+        @Test
+        @DisplayName("경쟁자보다 낮은 한도 - 경쟁자가 프록시 가격으로 낙찰")
+        void setAutoBid_loseToCompetitor_competitorWinsAtProxyPrice() {
+            // B(bidder, max=600K) vs A(bidder2, max=900K)
+            AutoBid competitorAutoBid = AutoBid.builder()
+                    .auction(auction).bidder(bidder2).maxAmount(900_000L).build();
+            setId(competitorAutoBid, 2L);
+
+            AutoBid bAutoBid = AutoBid.builder().auction(auction).bidder(bidder).maxAmount(600_000L).build();
+            setId(bAutoBid, 1L);
+
+            setField(auction, "winner", bidder2);
+
+            given(auctionService.findAuctionById(1L)).willReturn(auction);
+            given(memberService.findById(2L)).willReturn(bidder);
+            given(autoBidRepository.findByAuctionIdAndBidderId(1L, 2L))
+                    .willReturn(Optional.empty())
+                    .willReturn(Optional.of(bAutoBid));
+            given(autoBidRepository.save(any(AutoBid.class))).willReturn(bAutoBid);
+            given(autoBidRepository.findActiveByAuctionIdExcludingBidder(1L, 2L))
+                    .willReturn(List.of(competitorAutoBid));
+            given(bidRepository.save(any(Bid.class))).willAnswer(inv -> {
+                Bid bid = inv.getArgument(0);
+                setId(bid, 99L);
+                return bid;
+            });
+
+            bidService.setAutoBid(1L, 2L, 600_000L);
+
+            // proxyPrice = min(600K + 18K, 900K) = 618K; A(bidder2) 낙찰, B 자동 입찰 비활성화
+            assertThat(auction.getCurrentPrice()).isEqualTo(618_000L);
+            assertThat(bAutoBid.isActive()).isFalse();
+        }
+
+        @Test
+        @DisplayName("이미 최고 입찰자인 경우 자동 입찰 등록 후 즉시 입찰 없음")
+        void setAutoBid_alreadyWinning_doesNotPlaceBid() {
+            setField(auction, "winner", bidder);
+
             given(auctionService.findAuctionById(1L)).willReturn(auction);
             given(memberService.findById(2L)).willReturn(bidder);
             given(autoBidRepository.findByAuctionIdAndBidderId(1L, 2L)).willReturn(Optional.empty());
@@ -251,28 +348,9 @@ class BidServiceTest {
 
             AutoBid result = bidService.setAutoBid(1L, 2L, 800_000L);
 
-            assertThat(result.getMaxAmount()).isEqualTo(800_000L);
             assertThat(result.isActive()).isTrue();
-        }
-
-        @Test
-        @DisplayName("자동 입찰 수정 성공 - 이미 설정 존재")
-        void setAutoBid_existingSetting_updatesMaxAmount() {
-            AutoBid existingAutoBid = AutoBid.builder()
-                    .auction(auction)
-                    .bidder(bidder)
-                    .maxAmount(600_000L)
-                    .build();
-            setId(existingAutoBid, 1L);
-
-            given(auctionService.findAuctionById(1L)).willReturn(auction);
-            given(memberService.findById(2L)).willReturn(bidder);
-            given(autoBidRepository.findByAuctionIdAndBidderId(1L, 2L)).willReturn(Optional.of(existingAutoBid));
-            given(autoBidRepository.save(existingAutoBid)).willReturn(existingAutoBid);
-
-            AutoBid result = bidService.setAutoBid(1L, 2L, 900_000L);
-
-            assertThat(result.getMaxAmount()).isEqualTo(900_000L);
+            verifyNoInteractions(bidRepository);
+            verifyNoInteractions(bidEventPublisher);
         }
 
         @Test
@@ -404,11 +482,11 @@ class BidServiceTest {
 
 
             given(autoBidRepository.findActiveByAuctionIdExcludingBidder(anyLong(), anyLong()))
-                    .willReturn(List.of(autoBid))
-                    .willReturn(Collections.emptyList());
+                    .willReturn(List.of(autoBid));
 
             bidService.placeBid(1L, 2L, 515_000L);
 
+            // 수동 입찰 1건 + 프록시 자동 입찰 1건 = 총 2건
             verify(bidRepository, times(2)).save(any(Bid.class));
             verify(bidEventPublisher, times(2)).publishBidPlaced(any(Bid.class));
         }
