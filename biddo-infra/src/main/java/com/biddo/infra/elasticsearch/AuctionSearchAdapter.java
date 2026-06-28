@@ -50,17 +50,23 @@ public class AuctionSearchAdapter implements AuctionSearchPort {
     @Override
     @CircuitBreaker(name = "elasticsearch", fallbackMethod = "findSimilarFallback")
     public List<AuctionSearchResult> findSimilar(Long auctionId, int size) {
+        AuctionDocument baseDoc = elasticsearchOperations.get(String.valueOf(auctionId), AuctionDocument.class);
+
         NativeQuery query = NativeQuery.builder()
-                .withQuery(q -> q.bool(b -> b
-                        .must(m -> m.moreLikeThis(mlt -> mlt
-                                .fields("title", "description")
-                                .like(l -> l.document(d -> d.index("auctions").id(String.valueOf(auctionId))))
-                                .minTermFreq(1)
-                                .minDocFreq(1)
-                                .maxQueryTerms(12)
-                        ))
-                        .filter(f -> f.term(t -> t.field("status").value("ACTIVE")))
-                ))
+                .withQuery(q -> q.bool(b -> {
+                    b.must(m -> m.moreLikeThis(mlt -> mlt
+                            .fields("title", "description")
+                            .like(l -> l.document(d -> d.index("auctions").id(String.valueOf(auctionId))))
+                            .minTermFreq(1)
+                            .minDocFreq(1)
+                            .maxQueryTerms(12)
+                    ));
+                    b.filter(f -> f.term(t -> t.field("status").value("ACTIVE")));
+                    if (baseDoc != null) {
+                        b.filter(f -> f.term(t -> t.field("categoryId").value(baseDoc.getCategoryId())));
+                    }
+                    return b;
+                }))
                 .withPageable(PageRequest.of(0, size))
                 .build();
 
