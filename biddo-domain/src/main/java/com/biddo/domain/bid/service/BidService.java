@@ -24,13 +24,13 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class BidService {
 
-    private static final int MAX_AUTO_BID_CHAIN = 10;
     private static final int SNIPING_MINUTES = 10;
 
     private final BidRepository bidRepository;
@@ -130,7 +130,14 @@ public class BidService {
                         .maxAmount(maxAmount)
                         .build());
 
-        return autoBidRepository.save(autoBid);
+        autoBidRepository.save(autoBid);
+
+        boolean isAlreadyWinning = auction.getWinner() != null && auction.getWinner().getId().equals(bidderId);
+        if (!isAlreadyWinning) {
+            processAutoBids(auction, bidderId);
+        }
+
+        return autoBid;
     }
 
     @Transactional
@@ -181,48 +188,79 @@ public class BidService {
     }
 
     private void processAutoBids(Auction auction, Long triggerBidderId) {
-        int chainCount = 0;
-        for (int i = 0; i < MAX_AUTO_BID_CHAIN; i++) {
-            List<AutoBid> activeAutoBids = autoBidRepository
-                    .findActiveByAuctionIdExcludingBidder(auction.getId(), triggerBidderId);
+        List<AutoBid> competing = autoBidRepository
+                .findActiveByAuctionIdExcludingBidder(auction.getId(), triggerBidderId);
 
-            if (activeAutoBids.isEmpty()) {
-                break;
+        AutoBid triggerAutoBid = autoBidRepository
+                .findByAuctionIdAndBidderId(auction.getId(), triggerBidderId)
+                .filter(AutoBid::isActive)
+                .orElse(null);
+
+        long triggerCeiling = triggerAutoBid != null
+                ? triggerAutoBid.getMaxAmount()
+                : auction.getCurrentPrice();
+
+        long minBid = auction.getCurrentPrice() + calculateMinIncrement(auction.getCurrentPrice());
+
+        if (competing.isEmpty()) {
+            // 경쟁 자동 입찰 없음: trigger가 자동 입찰 등록자이고 아직 미낙찰 상태면 minBid로 입찰
+            if (triggerAutoBid != null) {
+                boolean triggerAlreadyWinning = auction.getWinner() != null
+                        && auction.getWinner().getId().equals(triggerBidderId);
+                if (!triggerAlreadyWinning) {
+                    Bid bid = createBid(auction, triggerAutoBid.getBidder(), minBid, BidType.AUTO);
+                    extendIfSniping(auction);
+                    bidEventPublisher.publishBidPlaced(bid);
+                    log.info("프록시 입찰: auctionId={}, winner={}, amount={}",
+                            auction.getId(), triggerBidderId, minBid);
+                }
             }
+            return;
+        }
 
-            AutoBid bestAutoBid = activeAutoBids.stream()
-                    .sorted(Comparator.comparing(AutoBid::getMaxAmount).reversed()
-                            .thenComparing(AutoBid::getCreatedAt))
-                    .findFirst()
-                    .orElse(null);
+        List<AutoBid> sorted = competing.stream()
+                .sorted(Comparator.comparing(AutoBid::getMaxAmount).reversed()
+                        .thenComparing(AutoBid::getCreatedAt))
+                .collect(Collectors.toList());
 
-            if (bestAutoBid == null) {
-                break;
-            }
+        AutoBid best = sorted.get(0);
 
-            long minBid = auction.getCurrentPrice() + calculateMinIncrement(auction.getCurrentPrice());
+        if (best.getMaxAmount() < minBid) {
+            best.deactivate();
+            return;
+        }
 
-            if (bestAutoBid.getMaxAmount() < minBid) {
-                bestAutoBid.deactivate();
-                break;
-            }
-
-            long autoBidAmount = Math.min(minBid, bestAutoBid.getMaxAmount());
-            Bid autoBid = createBid(auction, bestAutoBid.getBidder(), autoBidAmount, BidType.AUTO);
+        if (best.getMaxAmount() <= triggerCeiling) {
+            // trigger가 최고 한도 → trigger 승리
+            long bidAmount = computeProxyPrice(best.getMaxAmount(), triggerCeiling);
+            sorted.forEach(AutoBid::deactivate);
+            Bid bid = createBid(auction, triggerAutoBid.getBidder(), bidAmount, BidType.AUTO);
             extendIfSniping(auction);
-            bidEventPublisher.publishBidPlaced(autoBid);
-            chainCount++;
+            bidEventPublisher.publishBidPlaced(bid);
+            log.info("프록시 입찰: auctionId={}, winner={}, amount={}",
+                    auction.getId(), triggerBidderId, bidAmount);
+        } else {
+            // best가 최고 한도 → best 승리
+            long secondMax = sorted.size() > 1 ? sorted.get(1).getMaxAmount() : 0L;
+            long effectiveSecond = Math.max(secondMax, triggerCeiling);
+            long bidAmount = effectiveSecond >= minBid
+                    ? computeProxyPrice(effectiveSecond, best.getMaxAmount())
+                    : minBid;
 
-            if (bestAutoBid.getMaxAmount() <= autoBidAmount + calculateMinIncrement(autoBidAmount)) {
-                bestAutoBid.deactivate();
-            }
+            sorted.stream().skip(1).forEach(AutoBid::deactivate);
+            if (triggerAutoBid != null) triggerAutoBid.deactivate();
 
-            triggerBidderId = bestAutoBid.getBidder().getId();
+            Bid bid = createBid(auction, best.getBidder(), bidAmount, BidType.AUTO);
+            extendIfSniping(auction);
+            bidEventPublisher.publishBidPlaced(bid);
+            log.info("프록시 입찰: auctionId={}, winner={}, amount={}",
+                    auction.getId(), best.getBidder().getId(), bidAmount);
         }
-        if (chainCount > 0) {
-            log.debug("자동입찰 연쇄 처리: auctionId={}, chainCount={}, finalPrice={}",
-                    auction.getId(), chainCount, auction.getCurrentPrice());
-        }
+    }
+
+    private long computeProxyPrice(long loserMax, long winnerMax) {
+        long inc = calculateMinIncrement(loserMax);
+        return Math.min(loserMax + inc, winnerMax);
     }
 
     private void extendIfSniping(Auction auction) {
