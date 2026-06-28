@@ -66,6 +66,7 @@ const Header = () => {
               <Link to="/auctions/create" className="text-sm px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700">
                 경매 등록
               </Link>
+              <Link to="/chat" className="text-sm text-gray-600 hover:text-gray-900">채팅</Link>
 
               <div className="relative">
                 <button

@@ -6,6 +6,8 @@ import RegisterPage from './pages/RegisterPage'
 import AuctionListPage from './pages/AuctionListPage'
 import AuctionCreatePage from './pages/AuctionCreatePage'
 import AuctionDetailPage from './pages/AuctionDetailPage'
+import ChatListPage from './pages/ChatListPage'
+import ChatRoomPage from './pages/ChatRoomPage'
 
 const App = () => (
   <BrowserRouter>
@@ -19,6 +21,14 @@ const App = () => (
         <Route
           path="/auctions/create"
           element={<PrivateRoute><AuctionCreatePage /></PrivateRoute>}
+        />
+        <Route
+          path="/chat"
+          element={<PrivateRoute><ChatListPage /></PrivateRoute>}
+        />
+        <Route
+          path="/chat/:roomId"
+          element={<PrivateRoute><ChatRoomPage /></PrivateRoute>}
         />
       </Routes>
     </main>

@@ -132,6 +132,31 @@ export interface Category {
   children?: Category[]
 }
 
+// Chat
+export type MessageType = 'TEXT' | 'IMAGE' | 'SYSTEM'
+export type ChatRoomStatus = 'ACTIVE' | 'CLOSED'
+
+export interface ChatRoom {
+  roomId: number
+  auctionId: number
+  auctionTitle: string
+  opponentNickname: string
+  lastMessage: string | null
+  lastMessageAt: string | null
+  unreadCount: number
+  status: ChatRoomStatus
+}
+
+export interface ChatMessage {
+  messageId: number
+  senderId: number
+  senderNickname: string
+  content: string
+  messageType: MessageType
+  imageUrl: string | null
+  createdAt: string
+}
+
 // WebSocket
 export type WsMessageType = 'NEW_BID' | 'AUCTION_ENDED' | 'AUCTION_SOLD' | 'COUNTDOWN_EXTENDED'
 
