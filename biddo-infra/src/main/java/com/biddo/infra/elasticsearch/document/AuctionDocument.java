@@ -59,12 +59,4 @@ public class AuctionDocument {
     @Field(type = FieldType.Keyword)
     private String sellerNickname;
 
-    public void updatePrice(Long currentPrice, int bidCount) {
-        this.currentPrice = currentPrice;
-        this.bidCount = bidCount;
-    }
-
-    public void updateStatus(String status) {
-        this.status = status;
-    }
 }

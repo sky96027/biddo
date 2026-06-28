@@ -9,12 +9,19 @@ import com.biddo.infra.kafka.event.BidEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
+import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
+import org.springframework.data.elasticsearch.core.query.UpdateQuery;
 
 import java.util.List;
+import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
@@ -28,64 +35,54 @@ class AuctionSearchConsumerTest {
     @Mock
     private AuctionDocumentRepository auctionDocumentRepository;
 
+    @Mock
+    private ElasticsearchOperations elasticsearchOperations;
+
     @InjectMocks
     private AuctionSearchConsumer consumer;
 
     // ── handleBidEvent ───────────────────────────────────────────────────────
 
     @Test
-    @DisplayName("BID_PLACED 배치 - DB/ES 각 1회 조회 후 일괄 저장")
-    void handleBidEvent_bidPlacedBatch_bulkFetchAndSave() {
+    @DisplayName("BID_PLACED 배치 - DB 1회 조회 후 가격/입찰수 부분 업데이트")
+    void handleBidEvent_bidPlacedBatch_partialUpdatesPrice() {
         // given
-        List<BidEvent> events = List.of(
-                bidEvent(1L), bidEvent(2L), bidEvent(3L)
-        );
+        List<BidEvent> events = List.of(bidEvent(1L), bidEvent(2L), bidEvent(3L));
 
         Auction a1 = auctionWithPrice(1L, 10000L, 5);
         Auction a2 = auctionWithPrice(2L, 20000L, 3);
         Auction a3 = auctionWithPrice(3L, 30000L, 7);
-
-        AuctionDocument d1 = mock(AuctionDocument.class);
-        AuctionDocument d2 = mock(AuctionDocument.class);
-        AuctionDocument d3 = mock(AuctionDocument.class);
-        given(d1.getId()).willReturn(1L);
-        given(d2.getId()).willReturn(2L);
-        given(d3.getId()).willReturn(3L);
-
         given(auctionJpaRepository.findAllById(anyList())).willReturn(List.of(a1, a2, a3));
-        given(auctionDocumentRepository.findAllById(anyList())).willReturn(List.of(d1, d2, d3));
 
         // when
         consumer.handleBidEvent(events);
 
         // then
         verify(auctionJpaRepository, times(1)).findAllById(anyList());
-        verify(auctionDocumentRepository, times(1)).findAllById(anyList());
-        verify(d1).updatePrice(10000L, 5);
-        verify(d2).updatePrice(20000L, 3);
-        verify(d3).updatePrice(30000L, 7);
-        verify(auctionDocumentRepository, times(1)).saveAll(anyList());
+        verifyNoInteractions(auctionDocumentRepository);
+
+        ArgumentCaptor<List<UpdateQuery>> captor = ArgumentCaptor.forClass(List.class);
+        verify(elasticsearchOperations).bulkUpdate(captor.capture(), any(IndexCoordinates.class));
+        assertThat(captor.getValue()).hasSize(3);
     }
 
     @Test
-    @DisplayName("같은 경매 중복 이벤트 - 단일 DB/ES 조회로 처리")
+    @DisplayName("같은 경매 중복 이벤트 - 단일 DB 조회 후 단일 부분 업데이트")
     void handleBidEvent_duplicateAuctionId_deduplicates() {
         // given
         List<BidEvent> events = List.of(bidEvent(1L), bidEvent(1L), bidEvent(1L));
 
         Auction auction = auctionWithPrice(1L, 15000L, 3);
-        AuctionDocument doc = mock(AuctionDocument.class);
-        given(doc.getId()).willReturn(1L);
-
         given(auctionJpaRepository.findAllById(List.of(1L))).willReturn(List.of(auction));
-        given(auctionDocumentRepository.findAllById(List.of(1L))).willReturn(List.of(doc));
 
         // when
         consumer.handleBidEvent(events);
 
         // then
         verify(auctionJpaRepository).findAllById(List.of(1L));
-        verify(doc, times(1)).updatePrice(15000L, 3);
+        ArgumentCaptor<List<UpdateQuery>> captor = ArgumentCaptor.forClass(List.class);
+        verify(elasticsearchOperations).bulkUpdate(captor.capture(), any(IndexCoordinates.class));
+        assertThat(captor.getValue()).hasSize(1);
     }
 
     @Test
@@ -100,7 +97,7 @@ class AuctionSearchConsumerTest {
         consumer.handleBidEvent(events);
 
         // then
-        verifyNoInteractions(auctionJpaRepository, auctionDocumentRepository);
+        verifyNoInteractions(auctionJpaRepository, auctionDocumentRepository, elasticsearchOperations);
     }
 
     @Test
@@ -110,31 +107,25 @@ class AuctionSearchConsumerTest {
         consumer.handleBidEvent(List.of());
 
         // then
-        verifyNoInteractions(auctionJpaRepository, auctionDocumentRepository);
+        verifyNoInteractions(auctionJpaRepository, auctionDocumentRepository, elasticsearchOperations);
     }
 
     @Test
-    @DisplayName("ES에 문서 없는 경매 - saveAll 대상에서 제외")
-    void handleBidEvent_documentMissingInEs_skipsUpdate() {
+    @DisplayName("DB에 없는 경매 - 부분 업데이트 대상에서 제외")
+    void handleBidEvent_auctionMissingInDb_skipsUpdate() {
         // given
         List<BidEvent> events = List.of(bidEvent(1L), bidEvent(2L));
 
         Auction a1 = auctionWithPrice(1L, 10000L, 1);
-        Auction a2 = mock(Auction.class);
-        given(a2.getId()).willReturn(2L);
-
-        AuctionDocument d1 = mock(AuctionDocument.class);
-        given(d1.getId()).willReturn(1L);
-
-        given(auctionJpaRepository.findAllById(anyList())).willReturn(List.of(a1, a2));
-        given(auctionDocumentRepository.findAllById(anyList())).willReturn(List.of(d1)); // 2번 없음
+        given(auctionJpaRepository.findAllById(anyList())).willReturn(List.of(a1)); // 2번 없음
 
         // when
         consumer.handleBidEvent(events);
 
         // then
-        verify(d1).updatePrice(10000L, 1);
-        verify(auctionDocumentRepository).saveAll(List.of(d1));
+        ArgumentCaptor<List<UpdateQuery>> captor = ArgumentCaptor.forClass(List.class);
+        verify(elasticsearchOperations).bulkUpdate(captor.capture(), any(IndexCoordinates.class));
+        assertThat(captor.getValue()).hasSize(1);
     }
 
     // ── handleAuctionEvent ───────────────────────────────────────────────────
@@ -160,7 +151,7 @@ class AuctionSearchConsumerTest {
         // then
         verify(auctionJpaRepository).findAllByIdWithImages(List.of(1L, 2L, 3L));
         verify(auctionDocumentRepository).saveAll(anyList());
-        verifyNoMoreInteractions(auctionDocumentRepository);
+        verifyNoInteractions(elasticsearchOperations);
     }
 
     @Test
@@ -177,32 +168,27 @@ class AuctionSearchConsumerTest {
 
         // then
         verify(auctionDocumentRepository).deleteAllById(List.of(1L, 2L));
-        verifyNoInteractions(auctionJpaRepository);
+        verifyNoInteractions(auctionJpaRepository, elasticsearchOperations);
     }
 
     @Test
-    @DisplayName("ENDED/SOLD 이벤트 - ES 문서 상태 일괄 업데이트")
-    void handleAuctionEvent_statusUpdateEvents_bulkUpdatesStatus() {
+    @DisplayName("ENDED/SOLD 이벤트 - ES 부분 업데이트로 status만 변경")
+    void handleAuctionEvent_statusUpdateEvents_partialUpdatesStatus() {
         // given
         List<AuctionEvent> events = List.of(
                 auctionEvent(1L, AuctionEvent.AUCTION_ENDED, "ENDED"),
                 auctionEvent(2L, AuctionEvent.AUCTION_SOLD, "SOLD")
         );
 
-        AuctionDocument d1 = mock(AuctionDocument.class);
-        AuctionDocument d2 = mock(AuctionDocument.class);
-        given(d1.getId()).willReturn(1L);
-        given(d2.getId()).willReturn(2L);
-        given(auctionDocumentRepository.findAllById(anyIterable())).willReturn(List.of(d1, d2));
-
         // when
         consumer.handleAuctionEvent(events);
 
         // then
-        verify(d1).updateStatus("ENDED");
-        verify(d2).updateStatus("SOLD");
-        verify(auctionDocumentRepository).saveAll(anyList());
-        verifyNoInteractions(auctionJpaRepository);
+        verifyNoInteractions(auctionJpaRepository, auctionDocumentRepository);
+
+        ArgumentCaptor<List<UpdateQuery>> captor = ArgumentCaptor.forClass(List.class);
+        verify(elasticsearchOperations).bulkUpdate(captor.capture(), any(IndexCoordinates.class));
+        assertThat(captor.getValue()).hasSize(2);
     }
 
     @Test
@@ -218,18 +204,14 @@ class AuctionSearchConsumerTest {
         Auction a1 = mockAuction(1L);
         given(auctionJpaRepository.findAllByIdWithImages(List.of(1L))).willReturn(List.of(a1));
 
-        AuctionDocument d3 = mock(AuctionDocument.class);
-        given(d3.getId()).willReturn(3L);
-        given(auctionDocumentRepository.findAllById(anyIterable())).willReturn(List.of(d3));
-
         // when
         consumer.handleAuctionEvent(events);
 
         // then
         verify(auctionJpaRepository).findAllByIdWithImages(List.of(1L));
+        verify(auctionDocumentRepository).saveAll(anyList());
         verify(auctionDocumentRepository).deleteAllById(List.of(2L));
-        verify(d3).updateStatus("ENDED");
-        verify(auctionDocumentRepository, times(2)).saveAll(anyList()); // index + statusUpdate
+        verify(elasticsearchOperations).bulkUpdate(anyList(), any(IndexCoordinates.class));
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────

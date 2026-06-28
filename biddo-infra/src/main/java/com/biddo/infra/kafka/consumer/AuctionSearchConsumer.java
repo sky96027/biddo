@@ -9,6 +9,10 @@ import com.biddo.infra.kafka.event.AuctionEvent;
 import com.biddo.infra.kafka.event.BidEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
+import org.springframework.data.elasticsearch.core.document.Document;
+import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
+import org.springframework.data.elasticsearch.core.query.UpdateQuery;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
@@ -20,8 +24,11 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AuctionSearchConsumer {
 
+    private static final IndexCoordinates AUCTIONS_INDEX = IndexCoordinates.of("auctions");
+
     private final AuctionDocumentRepository auctionDocumentRepository;
     private final AuctionJpaRepository auctionJpaRepository;
+    private final ElasticsearchOperations elasticsearchOperations;
 
     @KafkaListener(
             topics = KafkaConfig.BID_EVENTS,
@@ -42,23 +49,22 @@ public class AuctionSearchConsumer {
         Map<Long, Auction> auctionMap = auctionJpaRepository.findAllById(auctionIds)
                 .stream().collect(Collectors.toMap(Auction::getId, a -> a));
 
-        Map<Long, AuctionDocument> docMap = new HashMap<>();
-        auctionDocumentRepository.findAllById(auctionIds)
-                .forEach(doc -> docMap.put(doc.getId(), doc));
-
-        List<AuctionDocument> toSave = auctionIds.stream()
-                .filter(id -> auctionMap.containsKey(id) && docMap.containsKey(id))
+        List<UpdateQuery> updates = auctionIds.stream()
+                .filter(auctionMap::containsKey)
                 .map(id -> {
-                    AuctionDocument doc = docMap.get(id);
                     Auction auction = auctionMap.get(id);
-                    doc.updatePrice(auction.getCurrentPrice(), auction.getBidCount());
-                    return doc;
+                    return UpdateQuery.builder(String.valueOf(id))
+                            .withDocument(Document.from(Map.of(
+                                    "currentPrice", auction.getCurrentPrice(),
+                                    "bidCount", auction.getBidCount()
+                            )))
+                            .build();
                 })
                 .collect(Collectors.toList());
 
-        if (!toSave.isEmpty()) {
-            auctionDocumentRepository.saveAll(toSave);
-            log.info("Search sync - bid batch: updated {} auctions", toSave.size());
+        if (!updates.isEmpty()) {
+            elasticsearchOperations.bulkUpdate(updates, AUCTIONS_INDEX);
+            log.info("Search sync - bid batch: updated {} auctions", updates.size());
         }
     }
 
@@ -98,15 +104,13 @@ public class AuctionSearchConsumer {
         }
 
         if (!toUpdateStatus.isEmpty()) {
-            List<AuctionDocument> docs = new ArrayList<>();
-            auctionDocumentRepository.findAllById(toUpdateStatus.keySet()).forEach(doc -> {
-                doc.updateStatus(toUpdateStatus.get(doc.getId()));
-                docs.add(doc);
-            });
-            if (!docs.isEmpty()) {
-                auctionDocumentRepository.saveAll(docs);
-                log.info("Search sync - auction batch: status updated {} auctions", docs.size());
-            }
+            List<UpdateQuery> statusUpdates = toUpdateStatus.entrySet().stream()
+                    .map(entry -> UpdateQuery.builder(String.valueOf(entry.getKey()))
+                            .withDocument(Document.from(Map.of("status", entry.getValue())))
+                            .build())
+                    .collect(Collectors.toList());
+            elasticsearchOperations.bulkUpdate(statusUpdates, AUCTIONS_INDEX);
+            log.info("Search sync - auction batch: status updated {} auctions", statusUpdates.size());
         }
     }
 
