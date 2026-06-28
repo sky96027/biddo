@@ -150,6 +150,32 @@ EXPLAIN ANALYZE로 주요 쿼리 실측 후 누락·불일치 인덱스를 수�
 ### Redis 락 메트릭
 Redisson 락 대기·보유 시간 Micrometer 측정 (`bid.lock.wait`, `bid.lock.hold`).
 
+### K6 부하 테스트 결과 (500 VU, 분산 입찰)
+
+로컬 단일 인스턴스 환경 (AMD Ryzen 7 5800X / 16GB / OpenJDK 21).
+
+**최적화 전 초기 측정**
+
+| 지표 | 값 |
+|------|-----|
+| bid p95 | 66ms |
+| bid max | 1,090ms |
+| throughput | 276.6 req/s |
+| bid-events Kafka lag | 8,040 (30분+ 드레인 불가) |
+
+**최적화 작업별 변화**
+
+| 작업 | bid p95 | bid max | Kafka lag | 비고 |
+|------|---------|---------|-----------|------|
+| 초기 (튜닝 전) | 66ms | 1,090ms | **8,040** | 알림 처리 지연 심각 |
+| ① 알림·검색 컨슈머 배치 처리 + N+1 제거 | 51ms | 185ms | **0** | max **-83%**, lag 완전 해소 |
+
+**병목 분석 요약**
+
+- 500 VU 기준 락 보유(hold) avg 42.6ms — 락 대기(wait)보다 **트랜잭션 처리 시간**이 주 병목
+- DB 커넥션 풀(20개)은 500 VU에서 포화, 200 VU까지는 Redis 락 직렬화가 주 병목
+- `processAutoBids` 루프 내 반복 쿼리 → 자동 입찰 체인 길수록 hold 증가
+
 ## Git 컨벤션
 
 - **브랜치**: `main` → `develop` → `feature/{도메인}-{기능}`
