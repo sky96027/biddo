@@ -10,11 +10,11 @@
 인터넷 → CloudFront E1FKQDRIT6PB7D (biddo.click / www.biddo.click)
            ├── S3 biddo-front-730335638220 (프론트엔드 정적 파일)
            └── ALB (biddo-alb-1189903426.ap-northeast-2.elb.amazonaws.com)
-                 ├── EC2-App-1 (43.201.33.170, t3.small)
-                 └── EC2-App-2 (3.34.180.44, t3.small)
+                 ├── EC2-App-1 (43.203.11.121, t3.small)
+                 └── EC2-App-2 (54.116.191.0, t3.small)
                             │ VPC 내부 통신
                             ▼
-                 EC2-Infra (54.180.132.114 / 10.0.14.136, t3.large)
+                 EC2-Infra (동적으로 변경 / 10.0.14.136, t3.large)
                    PostgreSQL / Redis Sentinel / Kafka / Elasticsearch
                    Prometheus / Grafana / Tempo
 
@@ -48,7 +48,7 @@ ECR: `730335638220.dkr.ecr.ap-northeast-2.amazonaws.com/biddo`
 
 ### EC2-Infra (t3.large)
 
-- Public IP: `54.180.132.114` / Private IP: `10.0.14.136`
+- Public IP: `동적으로 변경` / Private IP: `10.0.14.136`
 
 **실행 중인 컨테이너:**
 
