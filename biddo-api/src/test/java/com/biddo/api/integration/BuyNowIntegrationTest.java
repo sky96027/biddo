@@ -69,8 +69,8 @@ class BuyNowIntegrationTest extends IntegrationTestBase {
         bidService.setAutoBid(auctionId, autoBidder1.getId(), 50_000L);
         bidService.setAutoBid(auctionId, autoBidder2.getId(), 60_000L);
 
-        // 수동 입찰 1건
-        bidService.placeBid(auctionId, manualBidder.getId(), 11_000L);
+        // 수동 입찰 1건 (setAutoBid 프록시로 currentPrice=52,500 → minBid=55,200 이상 필요)
+        bidService.placeBid(auctionId, manualBidder.getId(), 56_000L);
 
         // when: 즉시 구매
         Bid buyNowBid = bidService.buyNow(auctionId, buyer.getId());
