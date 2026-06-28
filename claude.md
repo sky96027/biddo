@@ -4,7 +4,7 @@
 
 ## 기술 스택
 
-- **Backend**: Java 17+, Spring Boot 3.x, Spring Data JPA (Hibernate), Gradle
+- **Backend**: Java 21, Spring Boot 3.4.4, Spring Data JPA (Hibernate), Gradle
 - **DB**: PostgreSQL, Redis Sentinel (master + replica + sentinel x3), Redisson
 - **Messaging**: Apache Kafka
 - **Real-time**: WebSocket (입찰/채팅), SSE (알림)

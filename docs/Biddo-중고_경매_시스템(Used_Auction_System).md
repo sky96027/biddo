@@ -13,8 +13,8 @@
 
 | 구분 | 기술 | 설명 |
 | --- | --- | --- |
-| Language | Java 17+ | 메인 개발 언어 |
-| Framework | Spring Boot 3.x | REST API 서버 프레임워크 |
+| Language | Java 21 | 메인 개발 언어 |
+| Framework | Spring Boot 3.4.4 | REST API 서버 프레임워크 |
 | ORM | Spring Data JPA (Hibernate) | 데이터베이스 ORM |
 | Build Tool | Gradle | 빌드 및 의존성 관리 |
 
