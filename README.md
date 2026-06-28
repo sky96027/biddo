@@ -32,6 +32,27 @@ biddo/
 
 **아키텍처**: Bid/Auction은 포트/어댑터 패턴 (외부 의존 다수 → 테스트/교체 용이), 나머지는 레이어드 패턴 (보일러플레이트 최소화).
 
+## AWS 인프라 구조
+
+```
+인터넷 → CloudFront E1FKQDRIT6PB7D (biddo.click / www.biddo.click)
+           ├── S3 biddo-front-730335638220 (프론트엔드 정적 파일)
+           └── ALB (ap-northeast-2)
+                 ├── EC2-App-1 (t3.small)
+                 └── EC2-App-2 (t3.small)
+                            │ VPC 내부 통신
+                            ▼
+                 EC2-Infra (t3.large)
+                   PostgreSQL / Redis Sentinel / Kafka / Elasticsearch
+                   Prometheus / Grafana / Tempo
+
+         CloudFront EJ86WHT8XK6JU
+           └── S3 biddo-uploads (사용자 업로드 파일)
+```
+
+CI/CD: GitHub Actions → ECR → App-1 → App-2 (롤링 배포)  
+상세 구성은 [AWS 인프라 현황](docs/AWS_인프라_현황.md) 참고.
+
 ## 주요 기능
 
 ### 경매
@@ -124,7 +145,7 @@ Swagger UI: `http://localhost:9090/swagger-ui/index.html`
 ## 설계 문서
 
 - [프로젝트 개요](docs/Biddo-중고_경매_시스템(Used_Auction_System).md)
-- [AWS 배포 계획](docs/AWS_배포_계획.md)
+- [AWS 인프라 현황](docs/AWS_인프라_현황.md)
 - [ERD](docs/spec/ERD.md)
 - [API 명세서](docs/spec/API_명세서.md)
 - [비즈니스 규칙 정의서](docs/spec/비즈니스_규칙_정의서.md)

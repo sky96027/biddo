@@ -19,6 +19,10 @@ name: CI/CD
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - 'README.md'
+      - '*.md'
 
 env:
   AWS_REGION: ap-northeast-2
