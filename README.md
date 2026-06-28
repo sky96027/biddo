@@ -6,12 +6,12 @@
 
 | 분류 | 기술 |
 |------|------|
-| Backend | Java 21, Spring Boot 3.x, Spring Data JPA (Hibernate), Gradle |
+| Backend | Java 21, Spring Boot 3.4.4, Spring Data JPA (Hibernate), Gradle |
 | DB | PostgreSQL, Redis Sentinel (master + replica + sentinel ×3), Redisson |
 | Messaging | Apache Kafka |
 | Real-time | WebSocket (입찰/채팅), SSE (알림/카운트다운) |
 | Search | Elasticsearch |
-| Storage | S3 + CloudFront + Lambda@Edge (이미지 리사이징) |
+| Storage | S3 + CloudFront |
 | Infra | EC2 x3 (App x2 + Infra x1), ALB, ECR, EventBridge Scheduler, GitHub Actions CI/CD, Docker |
 | Monitoring | Prometheus + Grafana + Tempo (분산 추적) |
 | API Docs | SpringDoc OpenAPI (Swagger UI) |
