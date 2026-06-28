@@ -31,12 +31,12 @@ const App = () => {
   useEffect(() => {
     const check = async () => {
       try {
-        await axios.get('/api/v1/auctions', { params: { size: 1 }, timeout: 5000 })
+        await axios.get('/api/v1/categories', { timeout: 5000 })
         setServerDown(false)
       } catch (e: unknown) {
         if (axios.isAxiosError(e)) {
           const status = e.response?.status
-          if (!status || status >= 500) setServerDown(true)
+          if (!status || status === 502 || status === 503 || status === 504) setServerDown(true)
         }
       } finally {
         setChecked(true)
@@ -44,7 +44,7 @@ const App = () => {
     }
 
     void check()
-    const timer = setInterval(() => void check(), 30000)
+    const timer = setInterval(() => void check(), 5000)
     return () => clearInterval(timer)
   }, [])
 
