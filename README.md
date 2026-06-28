@@ -6,8 +6,8 @@
 
 | 분류 | 기술 |
 |------|------|
-| Backend | Java 17+, Spring Boot 3.x, Spring Data JPA (Hibernate), Gradle |
-| DB | PostgreSQL, Redis |
+| Backend | Java 21, Spring Boot 3.x, Spring Data JPA (Hibernate), Gradle |
+| DB | PostgreSQL, Redis Sentinel (master + replica + sentinel ×3), Redisson |
 | Messaging | Apache Kafka |
 | Real-time | WebSocket (입찰/채팅), SSE (알림/카운트다운) |
 | Search | Elasticsearch |
@@ -36,26 +36,27 @@ biddo/
 
 ### 경매
 - 경매 등록/수정/취소 (PENDING 상태에서만 수정/취소 가능)
-- Redis TTL 기반 경매 상태 전환 (PENDING → ACTIVE → ENDED/SOLD) + 보완 스케줄러
+- **Redis TTL 기반 경매 상태 전환** (PENDING → ACTIVE → ENDED/SOLD) + 보완 스케줄러
 - 생명주기 메트릭: TTL vs 스케줄러 경로별 처리 건수 Micrometer Counter (`auction.lifecycle.processed`)
-- 스나이핑 방지: 종료 10분 전 입찰 시 +10분 연장
+- **스나이핑 방지**: 종료 10분 전 입찰 시 +10분 연장
 
 ### 입찰
 - 수동 입찰, 자동 입찰, 즉시 구매
 - 최소 증가 단위: 현재가 비율 기반 (10%/5%/3%/1%), 100원 단위 올림
-- Redis 분산 락 (Redisson): EC2 2대 환경에서 동시 입찰 원자성 보장
-- 자동 입찰 연쇄 방지 (최대 10회 제한)
+- **Redis 분산 락 (Redisson)**: EC2 2대 환경에서 동시 입찰 원자성 보장
+- **자동 입찰 연쇄 방지** (최대 10회 제한)
 
 ### 검색
 - Elasticsearch 기반 전문 검색 (키워드, 카테고리, 가격, 마감 임박 필터)
-- Nori 형태소 분석기: 한국어 복합어 분리 및 조사 제거로 띄어쓰기·어미 변형 무관 검색
-- function_score 커스텀 스코어링: 입찰 수(log1p) + 마감 임박(gauss decay 3d) 가중치로 인기·마감 임박 상품 우선 노출
-- Resilience4j CircuitBreaker: ES 장애 시 DB fallback
+- **Nori 형태소 분석기**: 한국어 복합어 분리 및 조사 제거로 띄어쓰기·어미 변형 무관 검색
+- **function_score 커스텀 스코어링**: 입찰 수(log1p) + 마감 임박(gauss decay 3d) 가중치로 인기·마감 임박 상품 우선 노출
+- **Resilience4j CircuitBreaker**: ES 장애 시 DB fallback
 - 최근 검색어 관리 (Redis)
 
 ### 실시간 통신
-- WebSocket: 입찰 실시간 알림, 채팅
+- WebSocket (STOMP): 입찰 현재가·입찰수 실시간 반영, 경매 종료/연장 이벤트, 채팅
 - SSE: 알림 스트리밍, 경매 카운트다운
+- **다중 인스턴스 환경에서 Kafka consumer group 인스턴스별 분리**로 메시지 중복 방지
 
 ### 알림
 - 입찰 알림 (BID/OUTBID/AUCTION_END/WON)
@@ -69,7 +70,7 @@ biddo/
 
 ### 평판
 - 거래 후기 (별점 1~5 + 텍스트)
-- 신뢰도 점수: 후기 평균(50%) + 거래 완료율(25%) + 가입 기간(15%) - 신고 패널티(10%), 일 1회 배치 재계산
+- **신뢰도 점수**: 후기 평균(50%) + 거래 완료율(25%) + 가입 기간(15%) - 신고 패널티(10%), 일 1회 배치 재계산
 
 ### 관리자
 - 신고 관리 (PENDING → REVIEWED → RESOLVED/DISMISSED)
@@ -79,7 +80,7 @@ biddo/
 ## 로컬 개발 환경 설정
 
 ### 사전 요구사항
-- Java 17+
+- Java 21
 - Docker & Docker Compose
 
 ### 실행
