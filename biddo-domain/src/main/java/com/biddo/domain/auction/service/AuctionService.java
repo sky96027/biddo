@@ -15,6 +15,7 @@ import com.biddo.domain.category.entity.Category;
 import com.biddo.domain.category.repository.CategoryRepository;
 import com.biddo.domain.common.exception.BusinessException;
 import com.biddo.domain.member.entity.Member;
+import com.biddo.domain.member.entity.MemberRole;
 import com.biddo.domain.member.service.MemberService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,7 +52,9 @@ public class AuctionService {
 
         LocalDateTime effectiveStartTime = (startTime != null) ? startTime : LocalDateTime.now();
         validateAuctionTime(effectiveStartTime, endTime);
-        validateAuctionDuration(effectiveStartTime, endTime);
+        if (seller.getRole() != MemberRole.ADMIN) {
+            validateAuctionDuration(effectiveStartTime, endTime);
+        }
 
         Auction auction = Auction.builder()
                 .seller(seller)

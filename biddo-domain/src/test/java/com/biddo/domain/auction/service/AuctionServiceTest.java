@@ -14,6 +14,7 @@ import com.biddo.domain.category.entity.Category;
 import com.biddo.domain.category.repository.CategoryRepository;
 import com.biddo.domain.common.exception.BusinessException;
 import com.biddo.domain.member.entity.Member;
+import com.biddo.domain.member.entity.MemberRole;
 import com.biddo.domain.member.exception.MemberNotFoundException;
 import com.biddo.domain.member.service.MemberService;
 import org.junit.jupiter.api.BeforeEach;
@@ -219,6 +220,34 @@ class AuctionServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(AuctionErrorCode.INVALID_AUCTION_TIME));
+    }
+
+    @Test
+    @DisplayName("어드민 경매 생성 성공 - 7일 초과 기간 허용")
+    void create_adminSeller_bypassesDurationValidation() {
+        Member admin = Member.builder()
+                .email("admin@test.com")
+                .password("encoded")
+                .nickname("admin")
+                .build();
+        setId(admin, 99L);
+        setField(admin, "role", MemberRole.ADMIN);
+
+        LocalDateTime farFutureEnd = LocalDateTime.of(9999, 12, 31, 23, 59, 59);
+
+        given(memberService.findById(99L)).willReturn(admin);
+        given(categoryRepository.findById(9L)).willReturn(Optional.of(category));
+        given(auctionRepository.save(any(Auction.class))).willAnswer(invocation -> {
+            Auction auction = invocation.getArgument(0);
+            setId(auction, 100L);
+            return auction;
+        });
+
+        Auction result = auctionService.create(99L, 9L, "샘플 경매", "포트폴리오 시연용",
+                ItemCondition.GOOD, 10000L, null, LocalDateTime.now(), farFutureEnd, null);
+
+        assertThat(result.getEndTime()).isEqualTo(farFutureEnd);
+        assertThat(result.getStatus()).isEqualTo(AuctionStatus.PENDING);
     }
 
     @Test
